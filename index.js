@@ -33,19 +33,11 @@ app.use(express.json({ limit: "50mb", extended: true }));
 
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 const corsOptions = {
-  origin: [
-    "http://localhost:3000",
-    "http://localhost:3000/",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3000/",
-    "https://eatandfly-a34cb.web.app/",
-    "https://eatandfly-a34cb.web.app",
-  ],
+  origin: "*",
   credentials: true,
   optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
 
 app.use(cookieParser());
 app.use(morgan("combined"));
