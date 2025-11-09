@@ -10,16 +10,16 @@ const { port, dbUrl } = require("./config/keys").host;
 const bodyParser = require("body-parser");
 const routes = require("./routes");
 const { setIo } = require("./utils/socket/io.utils");
-const io = require("socket.io")(http, {
-  cors: {
-    origin: "*",
-  },
-});
-app.use((req, res, next) => {
-  setIo(io);
-  req.io = io;
-  next();
-});
+// const io = require("socket.io")(http, {
+//   cors: {
+//     origin: "*",
+//   },
+// });
+// app.use((req, res, next) => {
+//   setIo(io);
+//   req.io = io;
+//   next();
+// });
 
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(
@@ -33,11 +33,19 @@ app.use(express.json({ limit: "50mb", extended: true }));
 
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 const corsOptions = {
-  origin: "*",
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:3000/",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3000/",
+    "https://eatandfly-a34cb.web.app/",
+    "https://eatandfly-a34cb.web.app",
+  ],
   credentials: true,
   optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(cookieParser());
 app.use(morgan("combined"));
