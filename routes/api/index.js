@@ -13,5 +13,6 @@ router.use(
 );
 router.use("/user", jwtValidation, require("./User.route"));
 router.use("/product", jwtValidation, require("./Product.route"));
+router.use("/invoice", jwtValidation, require("./Invoice.route"));
 
 module.exports = router;
