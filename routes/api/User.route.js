@@ -7,8 +7,10 @@ const resetPassword = require("../../controllers/user/resetPassword");
 
 router.put("/updateProfile", updateProfile);
 router.put("/password/:token", resetPassword);
+router.get("/summary", getDashboardSummary);
 
 const roleCheck = require("../../middlewares/roleCheck");
+const getDashboardSummary = require("../../controllers/user/getDashboardSummary");
 
 router.get(
   "/",
