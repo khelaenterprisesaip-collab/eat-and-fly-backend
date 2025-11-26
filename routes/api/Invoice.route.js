@@ -1,5 +1,4 @@
 const addInvoice = require("../../controllers/invoice/addInvoice");
-const isAdmin = require("../../middlewares/isAdmin");
 
 const router = require("express").Router();
 

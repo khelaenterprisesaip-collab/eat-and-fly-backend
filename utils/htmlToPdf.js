@@ -12,7 +12,7 @@ exports.convertHTMLToPdf = async (order) => {
   const sanitizedOrder = await sanitize(order);
   return new Promise((resolve, reject) => {
     ejs.renderFile(
-      path.join(__dirname, "../../templates/invoice.ejs"),
+      path.join(__dirname, "./templates/invoice.ejs"),
       sanitizedOrder || {},
       (err, html) => {
         if (err) {
