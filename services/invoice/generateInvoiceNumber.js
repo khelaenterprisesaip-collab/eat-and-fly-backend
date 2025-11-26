@@ -19,8 +19,8 @@ class InvoiceService {
       nextNumber = numericPart + 1;
     }
 
-    // Convert to format INV001
-    const formatted = `INV${String(nextNumber).padStart(3, "0")}`;
+    // Convert to format INV0001
+    const formatted = `INV${String(nextNumber).padStart(4, "0")}`;
 
     return formatted;
   }
