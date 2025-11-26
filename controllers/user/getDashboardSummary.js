@@ -1,4 +1,3 @@
-const CustomerModel = require("../../models/Customer.model");
 const InvoiceModel = require("../../models/Invoice.model");
 const ProductModel = require("../../models/Product.model");
 
@@ -26,9 +25,6 @@ const getDashboardSummary = async (req, res) => {
 
     // Build invoice filter with date range
     const invoiceFilter = { ...dateFilter };
-
-    // TOTAL CUSTOMERS (filtered by createdAt)
-    const totalCustomers = await CustomerModel.countDocuments(dateFilter);
 
     // TOTAL INVOICES (filtered by createdAt)
     const totalInvoices = await InvoiceModel.countDocuments(invoiceFilter);
@@ -58,7 +54,6 @@ const getDashboardSummary = async (req, res) => {
     return res.status(200).json({
       success: true,
       summary: {
-        totalCustomers,
         totalInvoices,
         totalAmount,
         totalProducts,

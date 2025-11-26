@@ -1,4 +1,4 @@
-const Invoice = require("../models/Invoice.model");
+const InvoiceModel = require("../../models/Invoice.model");
 
 class InvoiceService {
   /**
@@ -6,7 +6,7 @@ class InvoiceService {
    */
   static async generateInvoiceNumber() {
     // Find last created invoice sorted by createdAt
-    const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
+    const lastInvoice = await InvoiceModel.findOne().sort({ createdAt: -1 });
 
     let nextNumber = 1;
 
