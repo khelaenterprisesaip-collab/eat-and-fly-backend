@@ -1,10 +1,11 @@
 const InvoiceModel = require("../../models/Invoice.model");
 const InvoiceService = require("../../services/invoice/generateInvoiceNumber");
 const { convertHTMLToPdf } = require("../../utils/htmlToPdf");
+const uploadFiles = require("../../services/util/upload-files");
 
 const addInvoice = async (req, res) => {
   try {
-    const airport = req.user?.airport;
+    const airport = req.body?.airport;
     if (!airport) {
       return res
         .status(400)
@@ -40,8 +41,6 @@ const addInvoice = async (req, res) => {
       paymentMethod,
       comment,
     });
-
-    await newInvoice.save();
 
     // STEP 3: Prepare data for PDF template
     const invoiceTemplateData = {

@@ -8,12 +8,13 @@ const sanitize = async (order) => {
   return order;
 };
 
-exports.convertHTMLToPdf = async (order) => {
-  const sanitizedOrder = await sanitize(order);
+exports.convertHTMLToPdf = async (data) => {
+  const sanitizedInvoice = await sanitize(data);
+  console.log("sanitizedInvoice", sanitizedInvoice);
   return new Promise((resolve, reject) => {
     ejs.renderFile(
       path.join(__dirname, "./templates/invoice.ejs"),
-      sanitizedOrder || {},
+      { invoice: sanitizedInvoice || {} },
       (err, html) => {
         if (err) {
           console.error("❌ EJS Render Error:", err);
@@ -21,7 +22,7 @@ exports.convertHTMLToPdf = async (order) => {
         }
 
         const fileName = `${
-          order?.invoice?.invoiceNumber || Math.floor(Math.random() * 100000)
+          data?.invoiceNumber || Math.floor(Math.random() * 100000)
         }-invoice.pdf`;
         const fullPath = path.join(__dirname, "../../", fileName);
 
