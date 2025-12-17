@@ -59,12 +59,12 @@ const addInvoice = async (req, res) => {
     };
 
     // STEP 4: Generate + upload PDF
-    const { Location, key } = await createInvoice(invoiceTemplateData);
+    // const { Location, key } = await createInvoice(invoiceTemplateData);
 
     // STEP 5: Update DB with PDF info
     newInvoice.pdf = {
-      name: key || "invoice.pdf",
-      url: Location,
+      // name: key || "invoice.pdf",
+      // url: Location,
     };
 
     await newInvoice.save();

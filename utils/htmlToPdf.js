@@ -2,7 +2,7 @@ const path = require("path");
 const pdf = require("html-pdf");
 const ejs = require("ejs");
 const dayjs = require("dayjs");
-const phantomjs = require("phantomjs-prebuilt");
+// const phantomjs = require("phantomjs-prebuilt");
 
 const sanitize = async (order) => {
   return order;
@@ -33,7 +33,7 @@ exports.convertHTMLToPdf = async (data) => {
           footer: { height: "0px" },
           zoomFactor: "0.76",
           type: "pdf",
-          phantomPath: phantomjs.path,
+          // phantomPath: phantomjs.path,
         };
 
         pdf.create(html, options).toFile(fullPath, (err, result) => {
