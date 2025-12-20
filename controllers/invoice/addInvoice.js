@@ -62,6 +62,7 @@ const addInvoice = async (req, res) => {
     const { Location, key } = await createInvoice(invoiceTemplateData);
 
     // STEP 5: Update DB with PDF info
+    console.log("Location", Location);
     newInvoice.pdf = {
       name: key || "invoice.pdf",
       url: Location,
