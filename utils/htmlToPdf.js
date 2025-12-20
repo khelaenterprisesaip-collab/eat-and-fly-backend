@@ -77,7 +77,11 @@ exports.convertHTMLToPdf = async (data) => {
           footer: { height: "0px" },
           zoomFactor: "0.76",
           type: "pdf",
-          phantomPath: phantomjs.path,
+          childProcessOptions: {
+            env: {
+              OPENSSL_CONF: "/dev/null",
+            },
+          },
         };
 
         pdf.create(html, options).toFile(fullPath, (err, result) => {
