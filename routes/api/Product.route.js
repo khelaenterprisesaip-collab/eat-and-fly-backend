@@ -22,6 +22,6 @@ router.put("/:id", updateProduct); // Add auth middleware here
 // DELETE /api/products/:id
 router.delete("/:id", deleteProduct);
 
-router.get("/airport", getProductsByAirport);
+router.get("/airport/single", getProductsByAirport);
 
 module.exports = router;
