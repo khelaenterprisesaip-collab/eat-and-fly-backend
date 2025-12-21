@@ -31,18 +31,18 @@ const InvoiceSchema = new Schema(
       type: Number,
       required: true,
     },
-    customer: {
-      name: {
-        type: String,
-        required: true,
-      },
-      email: {
-        type: String,
-      },
-      phoneNumber: {
-        type: Number,
-      },
-    },
+    // customer: {
+    //   name: {
+    //     type: String,
+    //     required: true,
+    //   },
+    //   email: {
+    //     type: String,
+    //   },
+    //   phoneNumber: {
+    //     type: Number,
+    //   },
+    // },
     subTotal: {
       type: Number,
       required: true,
@@ -80,10 +80,10 @@ const InvoiceSchema = new Schema(
       required: true,
       enum: ["cash", "card", "online"],
     },
-    comment: {
-      type: String,
-      required: false,
-    },
+    // comment: {
+    //   type: String,
+    //   required: false,
+    // },
     pdf: {
       name: {
         type: String,

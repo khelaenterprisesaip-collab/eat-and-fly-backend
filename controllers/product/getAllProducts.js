@@ -2,38 +2,54 @@ const Product = require("../../models/Product.model");
 
 const getProducts = async (req, res, next) => {
   try {
-    const { name, description, itemCode, pricing, airport, page, limit } =
-      req.query;
+    const { name, description, itemCode, airport, page, limit } = req.query;
 
     const pageNum = parseInt(page) || 1;
     const limitNum = parseInt(limit) || 10;
     const skip = (pageNum - 1) * limitNum;
 
-    let query = {};
+    const matchStage = {};
 
     if (name) {
-      query.name = { $regex: name, $options: "i" };
+      matchStage.name = { $regex: name, $options: "i" };
     }
 
     if (description) {
-      query.description = { $regex: description, $options: "i" };
+      matchStage.description = { $regex: description, $options: "i" };
     }
 
     if (itemCode) {
-      query.itemCode = { $regex: itemCode, $options: "i" };
+      matchStage.itemCode = { $regex: itemCode, $options: "i" };
     }
 
     if (airport) {
-      query.availableAtAirports = airport;
+      matchStage.availableAtAirports = airport;
     }
 
-    const [totalProducts, products] = await Promise.all([
-      Product.countDocuments(query),
-      Product.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
+    const pipeline = [
+      { $match: matchStage },
+
+      // Filter pricing array to only requested airport
+      {
+        $addFields: {
+          pricing: {
+            $filter: {
+              input: "$pricing",
+              as: "price",
+              cond: { $eq: ["$$price.airport", airport] },
+            },
+          },
+        },
+      },
+
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limitNum },
+    ];
+
+    const [products, totalProducts] = await Promise.all([
+      Product.aggregate(pipeline),
+      Product.countDocuments(matchStage),
     ]);
 
     res.status(200).json({

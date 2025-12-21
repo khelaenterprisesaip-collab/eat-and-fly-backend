@@ -14,14 +14,14 @@ const addInvoice = async (req, res) => {
 
     const {
       dateTime,
-      customer,
+      // customer,
       subTotal,
       taxPercentage,
       totalAmount,
       status,
       items,
       paymentMethod,
-      comment,
+      // comment,
     } = req.body;
 
     // STEP 1: Generate invoice number
@@ -32,14 +32,14 @@ const addInvoice = async (req, res) => {
       invoiceNumber,
       airport,
       dateTime,
-      customer,
+      // customer,
       subTotal,
       taxPercentage,
       totalAmount,
       status,
       items,
       paymentMethod,
-      comment,
+      // comment,
     });
 
     // STEP 3: Prepare data for PDF template
@@ -47,13 +47,13 @@ const addInvoice = async (req, res) => {
       invoiceNumber,
       dateTime,
       airport,
-      customer,
+      // customer,
       items,
       subTotal,
       taxPercentage,
       totalAmount,
       status,
-      comment,
+      // comment,
       createdAt: newInvoice.createdAt,
       invoiceId: newInvoice.uuid,
     };

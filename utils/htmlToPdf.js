@@ -25,14 +25,14 @@ const generateInvoicePDF = async () => {
       logoPath: path.join(__dirname, "../assets/logo.png"), // Ensure this file exists
     },
 
-    // The Receiver (Client)
-    customer: {
-      name: "Rahul Sharma",
-      address: "45 Green Avenue",
-      city: "New Delhi, 110001",
-      email: "rahul.sharma@example.com",
-      phoneNumber: "+91 98765 43210",
-    },
+    // // The Receiver (Client)
+    // customer: {
+    //   name: "Rahul Sharma",
+    //   address: "45 Green Avenue",
+    //   city: "New Delhi, 110001",
+    //   email: "rahul.sharma@example.com",
+    //   phoneNumber: "+91 98765 43210",
+    // },
 
     items: [
       {
@@ -57,8 +57,8 @@ const generateInvoicePDF = async () => {
     subTotal: 3500,
     taxPercentage: 18,
     totalAmount: 4130,
-    comment:
-      "Thank you for your business. Please quote invoice number in all payments.",
+    // comment:
+    //   "Thank you for your business. Please quote invoice number in all payments.",
   };
 
   return new Promise((resolve, reject) => {
@@ -171,27 +171,27 @@ const generateInvoicePDF = async () => {
 
       // ================= CLIENT & DATES (Grid Layout) =================
       doc.moveDown();
-      const infoTop = 160;
+      // const infoTop = 160;
 
       // Column 1: Bill To
-      doc
-        .fontSize(10)
-        .font("Helvetica-Bold")
-        .fillColor(colors.secondary)
-        .text("BILL TO", layout.startX, infoTop);
-      doc.moveDown(0.5);
-      doc
-        .fontSize(11)
-        .font("Helvetica-Bold")
-        .fillColor(colors.text)
-        .text(invoice.customer.name);
-      doc
-        .fontSize(10)
-        .font("Helvetica")
-        .fillColor(colors.secondary)
-        .text(invoice.customer.address || "")
-        .text(invoice.customer.city || "")
-        .text(invoice.customer.phoneNumber);
+      // doc
+      //   .fontSize(10)
+      //   .font("Helvetica-Bold")
+      //   .fillColor(colors.secondary)
+      //   .text("BILL TO", layout.startX, infoTop);
+      // doc.moveDown(0.5);
+      // doc
+      //   .fontSize(11)
+      //   .font("Helvetica-Bold")
+      //   .fillColor(colors.text)
+      //   .text(invoice.customer.name);
+      // doc
+      //   .fontSize(10)
+      //   .font("Helvetica")
+      //   .fillColor(colors.secondary)
+      //   .text(invoice.customer.address || "")
+      //   .text(invoice.customer.city || "")
+      //   .text(invoice.customer.phoneNumber);
 
       // Column 2: Details
       const col2X = 350;
@@ -332,14 +332,15 @@ const generateInvoicePDF = async () => {
       const bottomY = 700;
 
       // Comments / Notes Box
-      if (invoice.comment) {
-        doc.roundedRect(layout.startX, 600, 250, 50, 5).fill(colors.background);
-        doc
-          .fillColor(colors.secondary)
-          .fontSize(8)
-          .text("NOTES:", layout.startX + 10, 605)
-          .text(invoice.comment, layout.startX + 10, 620, { width: 230 });
-      }
+
+      doc.roundedRect(layout.startX, 600, 250, 50, 5).fill(colors.background);
+      doc
+        .fillColor(colors.secondary)
+        .fontSize(8)
+        .text("NOTES:", layout.startX + 10, 605)
+        .text("Thank you for your purchase.", layout.startX + 10, 620, {
+          width: 230,
+        });
 
       // Footer divider
       drawLine(bottomY);
