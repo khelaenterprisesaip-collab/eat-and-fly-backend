@@ -2,6 +2,7 @@ const InvoiceModel = require("../../models/Invoice.model");
 const InvoiceService = require("../../services/invoice/generateInvoiceNumber");
 const { generateInvoicePDF } = require("../../utils/htmlToPdf");
 const uploadFiles = require("../../services/util/upload-files");
+const dayjs = require("dayjs");
 
 const addInvoice = async (req, res) => {
   try {
@@ -54,7 +55,7 @@ const addInvoice = async (req, res) => {
       totalAmount,
       status,
       // comment,
-      createdAt: newInvoice.createdAt,
+      createdAt: dayjs().toISOString(),
       invoiceId: newInvoice.uuid,
     };
 

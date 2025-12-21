@@ -1,6 +1,7 @@
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
+const dayjs = require("dayjs");
 
 /**
  * Generate Invoice PDF
@@ -8,43 +9,40 @@ const path = require("path");
  * @returns {Promise<{filePath: string}>}
  */
 
+const statuses = {
+  paid: "Paid",
+  unpaid: "Unpaid",
+  overdue: "Overdue",
+};
+
+const airportNames = {
+  amritsar: "Sri Guru Ram Dass Ji International Airport (ATQ)",
+  ghaziabad: "Hindon Airport (HDO)",
+  jalandhar: "Adampur Airport (AIP)",
+  jaisalmer: "Jaisalmer Airport (JSA)",
+  ludhiana: "Ludhiana Airport (LUH)",
+};
+
 const generateInvoicePDF = async (invoiceData) => {
   console.log("invoiceData", invoiceData);
   const invoice = {
-    invoiceNumber: "INV-2025-0012",
-    dateTime: Math.floor(Date.now() / 1000),
+    invoiceNumber: invoiceData?.invoiceNumber || "-",
+    dateTime: dayjs.unix(invoiceData?.dateTime).format("DD-MM-YYYY HH:mm"),
     dueDate: Math.floor(Date.now() / 1000) + 86400 * 7,
-    status: "paid",
+    status: statuses[invoiceData?.status] || "Paid",
     company: {
       name: "Eat & Fly",
-      address: "Sri Guru Ram Dass Ji International Airport",
+      address:
+        airportNames[invoiceData?.airport] ||
+        "Sri Guru Ram Dass Ji International Airport (ATQ)",
       city: "Amritsar, Punjab 143001",
       email: "info@khelaenterprises.com",
       logoPath: path.join(__dirname, "../assets/logo.png"),
     },
-    items: [
-      {
-        name: "Airport Pickup Service (DEL)",
-        quantity: 1,
-        perUnitPrice: 2500,
-        totalPrice: 2500,
-      },
-      {
-        name: "Extra Luggage Handling",
-        quantity: 2,
-        perUnitPrice: 300,
-        totalPrice: 600,
-      },
-      {
-        name: "Night Charges",
-        quantity: 1,
-        perUnitPrice: 400,
-        totalPrice: 400,
-      },
-    ],
-    subTotal: 3500,
-    taxPercentage: 18,
-    totalAmount: 4130,
+    items: invoiceData?.items || [],
+    subTotal: invoiceData?.subTotal || 0,
+    taxPercentage: "5%",
+    totalAmount: invoiceData?.totalAmount || 0,
     // comment:
     //   "Thank you for your business. Please quote invoice number in all payments.",
   };
@@ -161,27 +159,6 @@ const generateInvoicePDF = async (invoiceData) => {
       doc.moveDown();
       const infoTop = 160;
 
-      // Column 1: Bill To
-      // doc
-      //   .fontSize(10)
-      //   .font("Helvetica-Bold")
-      //   .fillColor(colors.secondary)
-      //   .text("BILL TO", layout.startX, infoTop);
-      // doc.moveDown(0.5);
-      // doc
-      //   .fontSize(11)
-      //   .font("Helvetica-Bold")
-      //   .fillColor(colors.text)
-      //   .text(invoice.customer.name);
-      // doc
-      //   .fontSize(10)
-      //   .font("Helvetica")
-      //   .fillColor(colors.secondary)
-      //   .text(invoice.customer.address || "")
-      //   .text(invoice.customer.city || "")
-      //   .text(invoice.customer.phoneNumber);
-
-      // Column 2: Details
       const col2X = 350;
       doc
         .fontSize(10)
@@ -209,11 +186,6 @@ const generateInvoicePDF = async (invoiceData) => {
         "Date:",
         new Date(invoice.dateTime * 1000).toLocaleDateString(),
         detailY
-      );
-      detailRow(
-        "Due Date:",
-        new Date(invoice.dueDate * 1000).toLocaleDateString(),
-        detailY + 15
       );
 
       // ================= TABLE =================
