@@ -3,16 +3,10 @@ const fs = require("fs");
 const path = require("path");
 const dayjs = require("dayjs");
 
-/**
- * Generate Invoice PDF
- * @param {Object} invoice
- * @returns {Promise<{filePath: string}>}
- */
-
 const statuses = {
-  paid: "Paid",
-  unpaid: "Unpaid",
-  overdue: "Overdue",
+  paid: "PAID",
+  unpaid: "UNPAID",
+  overdue: "OVERDUE",
 };
 
 const airportNames = {
@@ -23,13 +17,40 @@ const airportNames = {
   ludhiana: "Ludhiana Airport (LUH)",
 };
 
+// --- DESIGN CONSTANTS ---
+const COLORS = {
+  primary: "#1a237e", // Deep Navy Blue
+  accent: "#2563eb", // Bright Blue
+  textDark: "#1f2937", // Near Black
+  textGray: "#6b7280", // Muted Gray
+  textLight: "#9ca3af", // Light Gray
+  tableHeader: "#f3f4f6", // Very Light Gray
+  tableRowOdd: "#ffffff",
+  tableRowEven: "#f9fafb", // Alternating row color
+  border: "#e5e7eb",
+  successBg: "#dcfce7",
+  successText: "#166534",
+  dangerBg: "#fee2e2",
+  dangerText: "#991b1b",
+};
+
+const FONTS = {
+  regular: "Helvetica",
+  bold: "Helvetica-Bold",
+};
+
+/**
+ * Generate Invoice PDF
+ */
 const generateInvoicePDF = async (invoiceData) => {
-  console.log("invoiceData", invoiceData);
+  console.log("Generating Invoice for:", invoiceData?.invoiceNumber);
+
+  // Data Preparation
   const invoice = {
     invoiceNumber: invoiceData?.invoiceNumber || "-",
-    dateTime: dayjs.unix(invoiceData?.dateTime).format("DD-MM-YYYY HH:mm"),
-    dueDate: Math.floor(Date.now() / 1000) + 86400 * 7,
-    status: statuses[invoiceData?.status] || "Paid",
+    dateTime: dayjs.unix(invoiceData?.dateTime).format("MMM DD, YYYY"),
+    time: dayjs.unix(invoiceData?.dateTime).format("hh:mm A"),
+    status: statuses[invoiceData?.status] || "PAID",
     company: {
       name: "Eat & Fly",
       address:
@@ -41,18 +62,15 @@ const generateInvoicePDF = async (invoiceData) => {
     },
     items: invoiceData?.items || [],
     subTotal: invoiceData?.subTotal || 0,
-    taxPercentage: "5%",
+    taxPercentage: 5,
     totalAmount: invoiceData?.totalAmount || 0,
-    // comment:
-    //   "Thank you for your business. Please quote invoice number in all payments.",
   };
 
   return new Promise((resolve, reject) => {
     try {
-      // 2. Setup Document with cleaner margins
       const doc = new PDFDocument({
         size: "A4",
-        margin: 50,
+        margin: 40, // Slightly tighter margins for a modern look
         bufferPages: true,
       });
 
@@ -64,261 +82,306 @@ const generateInvoicePDF = async (invoiceData) => {
       const stream = fs.createWriteStream(filePath);
       doc.pipe(stream);
 
-      // --- STYLE CONSTANTS ---
-      const colors = {
-        primary: "#2563EB", // Professional Blue
-        secondary: "#64748B", // Slate Grey
-        text: "#1E293B", // Dark Slate (not pure black)
-        background: "#F1F5F9", // Light Grey for headers
-        divider: "#E2E8F0", // Light border
-      };
+      // --- HELPER FUNCTIONS ---
+      const formatCurrency = (amount) => `₹ ${amount.toFixed(2)}`;
 
-      const layout = {
-        startX: 50,
-        col1: 50, // Item
-        col2: 300, // Qty
-        col3: 370, // Price
-        col4: 460, // Total
-        width: 500,
-      };
-
-      // --- HELPER: DRAW LINE ---
-      const drawLine = (y) => {
+      const drawHr = (y) => {
         doc
-          .strokeColor(colors.divider)
+          .strokeColor(COLORS.border)
           .lineWidth(1)
-          .moveTo(layout.startX, y)
-          .lineTo(layout.startX + layout.width, y)
+          .moveTo(40, y)
+          .lineTo(555, y)
           .stroke();
       };
 
-      // ================= HEADER =================
-      let topOffset = 50;
+      // ================= HEADER SECTION =================
+      let y = 40;
 
       // 1. Logo (Top Left)
-      // Check if logo exists, otherwise draw a placeholder box
       if (fs.existsSync(invoice.company.logoPath)) {
-        doc.image(invoice.company.logoPath, layout.startX, topOffset, {
-          width: 50,
-        });
+        doc.image(invoice.company.logoPath, 40, y, { width: 60 });
       } else {
-        // Fallback if no logo found
-        doc.rect(layout.startX, topOffset, 50, 50).fill(colors.primary);
+        // Fallback Logo Placeholder
+        doc
+          .roundedRect(40, y, 60, 60, 5)
+          .fill(COLORS.primary)
+          .fillColor("#FFF")
+          .fontSize(20)
+          .text("E&F", 50, y + 20);
       }
 
-      // 2. Company Info (Left, under logo)
+      // 2. Company Details (Left, below Logo)
       doc
-        .fontSize(10)
-        .font("Helvetica-Bold")
-        .fillColor(colors.text)
-        .text(invoice.company.name, layout.startX, topOffset + 60);
+        .fillColor(COLORS.textDark)
+        .font(FONTS.bold)
+        .fontSize(16)
+        .text(invoice.company.name, 115, y + 10);
 
       doc
+        .fillColor(COLORS.textGray)
+        .font(FONTS.regular)
         .fontSize(9)
-        .font("Helvetica")
-        .fillColor(colors.secondary)
-        .text(invoice.company.address, layout.startX)
-        .text(invoice.company.city, layout.startX)
-        .text(invoice.company.email, layout.startX);
+        .text(invoice.company.email, 115, y + 32);
 
-      // 3. Invoice Title & Status (Top Right)
+      // 3. Invoice Meta (Top Right)
       doc
-        .fontSize(20)
-        .font("Helvetica-Bold")
-        .fillColor(colors.primary)
-        .text("INVOICE", 0, topOffset, { align: "right", margin: 50 });
-
-      doc
+        .fillColor(COLORS.textLight)
         .fontSize(10)
-        .font("Helvetica")
-        .fillColor(colors.secondary)
-        .text(`# ${invoice.invoiceNumber}`, 0, topOffset + 25, {
-          align: "right",
-        });
+        .font(FONTS.bold)
+        .text("INVOICE NUMBER", 300, y, { align: "right" });
 
-      // Status Badge
-      const statusX = 490; // Approx right side
-      const statusY = topOffset + 45;
-
-      // Draw status background
       doc
-        .roundedRect(statusX, statusY, 60, 20, 10)
-        .fill(invoice.status === "paid" ? "#DCFCE7" : "#FEE2E2"); // Green for paid, Red for unpaid
+        .fillColor(COLORS.textDark)
+        .fontSize(14)
+        .text(`# ${invoice.invoiceNumber}`, 300, y + 15, { align: "right" });
 
-      // Draw status text
+      // Status Badge (Top Right, below invoice num)
+      const badgeWidth = 80;
+      const badgeHeight = 20;
+      const badgeX = 555 - badgeWidth; // Align right margin
+      const badgeY = y + 40;
+      const isPaid = invoice.status === "PAID";
+
       doc
-        .fillColor(invoice.status === "paid" ? "#166534" : "#991B1B")
+        .roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 10)
+        .fill(isPaid ? COLORS.successBg : COLORS.dangerBg);
+
+      doc
+        .fillColor(isPaid ? COLORS.successText : COLORS.dangerText)
         .fontSize(9)
-        .font("Helvetica-Bold")
-        .text(invoice.status.toUpperCase(), statusX, statusY + 5, {
-          width: 60,
+        .font(FONTS.bold)
+        .text(invoice.status, badgeX, badgeY + 5, {
+          width: badgeWidth,
           align: "center",
         });
 
-      // ================= CLIENT & DATES (Grid Layout) =================
-      doc.moveDown();
-      const infoTop = 160;
+      // ================= INFO GRID =================
+      y = 130;
+      drawHr(y);
+      y += 20;
 
-      const col2X = 350;
+      // Column 1: Location / Branch
       doc
-        .fontSize(10)
-        .font("Helvetica-Bold")
-        .fillColor(colors.secondary)
-        .text("DETAILS", col2X, infoTop);
-      doc.moveDown(0.5);
+        .fillColor(COLORS.textLight)
+        .fontSize(9)
+        .font(FONTS.bold)
+        .text("LOCATION / BRANCH", 40, y);
 
-      // Detail Row Helper
-      const detailRow = (label, value, y) => {
-        doc
-          .fontSize(10)
-          .font("Helvetica")
-          .fillColor(colors.secondary)
-          .text(label, col2X, y);
-        doc
-          .fontSize(10)
-          .font("Helvetica-Bold")
-          .fillColor(colors.text)
-          .text(value, col2X + 80, y, { align: "right", width: 120 });
+      doc
+        .fillColor(COLORS.textDark)
+        .fontSize(10)
+        .font(FONTS.regular)
+        .text(invoice.company.address, 40, y + 15, { width: 200 })
+        .text(invoice.company.city, 40, doc.y);
+
+      // Column 2: Date
+      doc
+        .fillColor(COLORS.textLight)
+        .fontSize(9)
+        .font(FONTS.bold)
+        .text("DATE ISSUED", 300, y);
+
+      doc
+        .fillColor(COLORS.textDark)
+        .fontSize(10)
+        .font(FONTS.regular)
+        .text(invoice.dateTime, 300, y + 15)
+        .text(invoice.time, 300, doc.y);
+
+      // Column 3: Total Amount (Highlighted)
+      doc
+        .fillColor(COLORS.textLight)
+        .fontSize(9)
+        .font(FONTS.bold)
+        .text("TOTAL AMOUNT", 450, y);
+
+      doc
+        .fillColor(COLORS.primary)
+        .fontSize(18)
+        .font(FONTS.bold)
+        .text(formatCurrency(invoice.totalAmount), 450, y + 15);
+
+      // ================= ITEM TABLE =================
+      y = 230;
+
+      // Layout columns
+      const cols = {
+        desc: { x: 40, w: 260 },
+        qty: { x: 300, w: 60 }, // Center aligned
+        price: { x: 380, w: 80 }, // Right aligned
+        total: { x: 480, w: 75 }, // Right aligned
       };
 
-      let detailY = doc.y;
-      detailRow(
-        "Date:",
-        new Date(invoice.dateTime * 1000).toLocaleDateString(),
-        detailY
-      );
-
-      // ================= TABLE =================
-      const tableTop = 270;
-
       // Table Header Background
-      doc
-        .rect(layout.startX, tableTop, layout.width, 25)
-        .fill(colors.background);
+      doc.rect(40, y, 515, 30).fill(COLORS.tableHeader);
 
       // Table Header Text
-      doc.font("Helvetica-Bold").fontSize(9).fillColor(colors.text);
-      doc.text("ITEM DESCRIPTION", layout.col1 + 10, tableTop + 8);
-      doc.text("QTY", layout.col2, tableTop + 8);
-      doc.text("PRICE", layout.col3, tableTop + 8);
-      doc.text("TOTAL", layout.col4, tableTop + 8);
-
-      let itemY = tableTop + 35;
-
-      invoice.items.forEach((item) => {
-        // Item Name
-        doc
-          .font("Helvetica-Bold")
-          .fontSize(10)
-          .fillColor(colors.text)
-          .text(item.name, layout.col1 + 10, itemY, { width: 220 });
-
-        // Quantity
-        doc
-          .font("Helvetica")
-          .fontSize(10)
-          .fillColor(colors.secondary)
-          .text(item.quantity, layout.col2, itemY);
-
-        // Price
-        doc.text(`₹${item.perUnitPrice.toFixed(2)}`, layout.col3, itemY);
-
-        // Total
-        doc
-          .font("Helvetica-Bold")
-          .fillColor(colors.text)
-          .text(`₹${item.totalPrice.toFixed(2)}`, layout.col4, itemY);
-
-        itemY += 25;
-        // Light divider line
-        drawLine(itemY - 5);
+      doc.fillColor(COLORS.textDark).fontSize(9).font(FONTS.bold);
+      doc.text("DESCRIPTION", cols.desc.x + 10, y + 10);
+      doc.text("QTY", cols.qty.x, y + 10, {
+        width: cols.qty.w,
+        align: "center",
+      });
+      doc.text("PRICE", cols.price.x, y + 10, {
+        width: cols.price.w,
+        align: "right",
+      });
+      doc.text("TOTAL", cols.total.x, y + 10, {
+        width: cols.total.w,
+        align: "right",
       });
 
-      // ================= SUMMARY SECTION =================
-      const summaryTop = itemY + 20;
-      const summaryLabelX = 350;
-      const summaryValueX = 460;
+      y += 30; // Move below header
 
-      // Subtotal
-      doc
-        .font("Helvetica")
-        .fontSize(10)
-        .fillColor(colors.secondary)
-        .text("Subtotal", summaryLabelX, summaryTop);
-      doc
-        .font("Helvetica-Bold")
-        .fillColor(colors.text)
-        .text(`₹${invoice.subTotal.toFixed(2)}`, summaryValueX, summaryTop);
+      // Table Rows
+      invoice.items.forEach((item, i) => {
+        const rowHeight = 35;
+        const currentY = y;
 
-      // Tax
-      doc
-        .font("Helvetica")
-        .fillColor(colors.secondary)
-        .text(
-          `Tax (${invoice.taxPercentage}%)`,
-          summaryLabelX,
-          summaryTop + 20
-        );
-      doc
-        .font("Helvetica-Bold")
-        .fillColor(colors.text)
-        .text(
-          `₹${((invoice.subTotal * invoice.taxPercentage) / 100).toFixed(2)}`,
-          summaryValueX,
-          summaryTop + 20
-        );
+        // Zebra Striping (Even rows get background)
+        if (i % 2 === 0) {
+          doc.rect(40, currentY, 515, rowHeight).fill(COLORS.tableRowEven);
+        }
 
-      // Divider for Total
-      doc
-        .strokeColor(colors.primary)
-        .lineWidth(2)
-        .moveTo(summaryLabelX, summaryTop + 40)
-        .lineTo(summaryValueX + 80, summaryTop + 40)
-        .stroke();
+        // Check for page break
+        if (currentY > 750) {
+          doc.addPage();
+          y = 40; // Reset Y
+        }
 
-      // Total
-      doc
-        .font("Helvetica-Bold")
-        .fontSize(14)
-        .fillColor(colors.primary)
-        .text("Total", summaryLabelX, summaryTop + 50);
-      doc.text(
-        `₹${invoice.totalAmount.toFixed(2)}`,
-        summaryValueX - 10,
-        summaryTop + 50
-      ); // slight left adjust for larger font
+        // Draw Text
+        doc.fillColor(COLORS.textDark).fontSize(10).font(FONTS.regular);
 
-      // ================= FOOTER =================
-      const bottomY = 700;
-
-      // Comments / Notes Box
-
-      doc.roundedRect(layout.startX, 600, 250, 50, 5).fill(colors.background);
-      doc
-        .fillColor(colors.secondary)
-        .fontSize(8)
-        .text("NOTES:", layout.startX + 10, 605)
-        .text("Thank you for your purchase.", layout.startX + 10, 620, {
-          width: 230,
+        // Item Name
+        doc.text(item.name, cols.desc.x + 10, currentY + 11, {
+          width: cols.desc.w,
         });
 
-      // Footer divider
-      drawLine(bottomY);
+        // Qty
+        doc.text(item.quantity.toString(), cols.qty.x, currentY + 11, {
+          width: cols.qty.w,
+          align: "center",
+        });
 
-      doc
-        .fontSize(8)
-        .fillColor(colors.secondary)
-        .text(
-          "Eat & Fly | info@khelaenterprises.com",
-          layout.startX,
-          bottomY + 10,
-          { align: "center", width: layout.width }
+        // Price
+        doc.text(
+          formatCurrency(item.perUnitPrice),
+          cols.price.x,
+          currentY + 11,
+          {
+            width: cols.price.w,
+            align: "right",
+          }
         );
 
-      doc.text("Thank you for your business!", layout.startX, bottomY + 25, {
-        align: "center",
-        width: layout.width,
+        // Total (Bold)
+        doc.font(FONTS.bold);
+        doc.text(formatCurrency(item.totalPrice), cols.total.x, currentY + 11, {
+          width: cols.total.w,
+          align: "right",
+        });
+
+        y += rowHeight;
       });
+
+      // ================= SUMMARY / TOTALS =================
+      y += 20;
+
+      const summaryX = 350;
+      const valX = 480;
+      const valW = 75;
+
+      // Helper for summary rows
+      const drawSummaryRow = (
+        label,
+        value,
+        isBold = false,
+        isTotal = false
+      ) => {
+        const labelColor = isTotal ? COLORS.primary : COLORS.textGray;
+        const valueColor = isTotal ? COLORS.primary : COLORS.textDark;
+        const fontSize = isTotal ? 12 : 10;
+        const fontType = isTotal || isBold ? FONTS.bold : FONTS.regular;
+
+        doc
+          .fillColor(labelColor)
+          .font(fontType)
+          .fontSize(fontSize)
+          .text(label, summaryX, y);
+
+        doc
+          .fillColor(valueColor)
+          .font(fontType)
+          .fontSize(fontSize)
+          .text(value, valX, y, { width: valW, align: "right" });
+
+        y += isTotal ? 25 : 20;
+      };
+
+      // Subtotal
+      drawSummaryRow("Subtotal", formatCurrency(invoice.subTotal));
+
+      // Tax
+      drawSummaryRow(
+        `Tax (${invoice.taxPercentage}%)`,
+        formatCurrency((invoice.subTotal * invoice.taxPercentage) / 100)
+      );
+
+      // Divider
+      doc
+        .strokeColor(COLORS.border)
+        .lineWidth(1)
+        .moveTo(summaryX, y - 5)
+        .lineTo(555, y - 5)
+        .stroke();
+      y += 5;
+
+      // Grand Total
+      drawSummaryRow(
+        "TOTAL DUE",
+        formatCurrency(invoice.totalAmount),
+        true,
+        true
+      );
+
+      // ================= FOOTER =================
+      // Push footer to bottom
+      const footerY = 730;
+
+      doc
+        .rect(0, footerY, 595, 112) // Fill bottom with light color
+        .fill(COLORS.tableHeader);
+
+      doc
+        .fillColor(COLORS.primary)
+        .font(FONTS.bold)
+        .fontSize(12)
+        .text("Thank you for your business!", 40, footerY + 25, {
+          align: "center",
+        });
+
+      doc
+        .fillColor(COLORS.textGray)
+        .font(FONTS.regular)
+        .fontSize(9)
+        .text(
+          "Please include the invoice number in your payment reference.",
+          40,
+          footerY + 45,
+          {
+            align: "center",
+          }
+        );
+
+      doc
+        .fillColor(COLORS.textLight)
+        .fontSize(8)
+        .text(
+          `Generated on ${dayjs().format("DD MMM YYYY HH:mm")}`,
+          40,
+          footerY + 70,
+          { align: "center" }
+        );
 
       doc.end();
 
@@ -331,102 +394,3 @@ const generateInvoicePDF = async (invoiceData) => {
 };
 
 module.exports = { generateInvoicePDF };
-
-// const path = require("path");
-// const pdf = require("html-pdf");
-// const ejs = require("ejs");
-// const dayjs = require("dayjs");
-// const phantomjs = require("phantomjs-prebuilt");
-
-// const sanitize = async (order) => {
-//   return {
-//     invoiceNumber: "INV-2025-0012",
-
-//     // UNIX timestamp (seconds)
-//     dateTime: Math.floor(Date.now() / 1000),
-
-//     airport: "Indira Gandhi International Airport (DEL)",
-
-//     status: "paid", // paid | pending | overdue
-
-//     customer: {
-//       name: "Rahul Sharma",
-//       email: "rahul.sharma@example.com",
-//       phoneNumber: "+91 98765 43210",
-//     },
-
-//     items: [
-//       {
-//         name: "Airport Pickup Service",
-//         quantity: 1,
-//         perUnitPrice: 2500,
-//         totalPrice: 2500,
-//       },
-//       {
-//         name: "Extra Luggage Handling",
-//         quantity: 2,
-//         perUnitPrice: 300,
-//         totalPrice: 600,
-//       },
-//       {
-//         name: "Night Charges",
-//         quantity: 1,
-//         perUnitPrice: 400,
-//         totalPrice: 400,
-//       },
-//     ],
-
-//     subTotal: 3500, // 2500 + 600 + 400
-
-//     taxPercentage: 18,
-
-//     totalAmount: 4130, // subTotal + tax
-
-//     comment: "Thank you for choosing our airport transfer service.",
-//   };
-// };
-
-// exports.convertHTMLToPdf = async (data) => {
-//   const sanitizedInvoice = await sanitize(data);
-//   console.log("sanitizedInvoice", sanitizedInvoice);
-//   return new Promise((resolve, reject) => {
-//     ejs.renderFile(
-//       path.join(__dirname, "./templates/invoice.ejs"),
-//       { invoice: sanitizedInvoice || {} },
-//       (err, html) => {
-//         if (err) {
-//           console.error("❌ EJS Render Error:", err);
-//           return reject(err);
-//         }
-
-//         const fileName = `${
-//           data?.invoiceNumber || Math.floor(Math.random() * 100000)
-//         }-invoice.pdf`;
-//         const fullPath = path.join(__dirname, "../../", fileName);
-
-//         const options = {
-//           height: "800px",
-//           width: "10.7in",
-//           header: { height: "0px" },
-//           footer: { height: "0px" },
-//           zoomFactor: "0.76",
-//           type: "pdf",
-//           childProcessOptions: {
-//             env: {
-//               OPENSSL_CONF: "/dev/null",
-//             },
-//           },
-//         };
-
-//         pdf.create(html, options).toFile(fullPath, (err, result) => {
-//           if (err) {
-//             console.error("❌ PDF creation error:", err);
-//             return reject(err);
-//           }
-//           console.log("✅ PDF saved at:", fullPath);
-//           return resolve({ location: fullPath });
-//         });
-//       }
-//     );
-//   });
-// };
