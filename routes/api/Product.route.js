@@ -8,18 +8,18 @@ const isAdmin = require("../../middlewares/isAdmin");
 const router = require("express").Router();
 
 // GET /api/products
-router.get("/", isAdmin, getProducts); // Add auth middleware here
+router.get("/", getProducts); // Add auth middleware here
 
 // GET /api/products/:id
-router.get("/:id", isAdmin, getProductById); // Add auth middleware here
+router.get("/:id", getProductById); // Add auth middleware here
 
 // POST /api/products
-router.post("/", isAdmin, addProduct); // Add auth middleware here
+router.post("/", addProduct); // Add auth middleware here
 
 // PUT /api/products/:id
-router.put("/:id", isAdmin, updateProduct); // Add auth middleware here
+router.put("/:id", updateProduct); // Add auth middleware here
 
 // DELETE /api/products/:id
-router.delete("/:id", isAdmin, deleteProduct);
+router.delete("/:id", deleteProduct);
 
 module.exports = router;
