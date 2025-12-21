@@ -16,7 +16,13 @@ const airportNames = {
   jaisalmer: "Jaisalmer Airport (JSA)",
   ludhiana: "Ludhiana Airport (LUH)",
 };
-
+const airportCity = {
+  amritsar: "Amritsar, Punjab 143001",
+  ghaziabad: "Ghaziabad, Uttar Pradesh 201002",
+  jalandhar: "Jalandhar, Punjab 144001",
+  jaisalmer: "Jaisalmer, Rajasthan 345001",
+  ludhiana: "Ludhiana, Punjab 141001",
+};
 // --- DESIGN CONSTANTS ---
 const COLORS = {
   primary: "#1a237e", // Deep Navy Blue
@@ -43,8 +49,6 @@ const FONTS = {
  * Generate Invoice PDF
  */
 const generateInvoicePDF = async (invoiceData) => {
-  console.log("Generating Invoice for:", invoiceData?.invoiceNumber);
-
   // Data Preparation
   const invoice = {
     invoiceNumber: invoiceData?.invoiceNumber || "-",
@@ -56,9 +60,9 @@ const generateInvoicePDF = async (invoiceData) => {
       address:
         airportNames[invoiceData?.airport] ||
         "Sri Guru Ram Dass Ji International Airport (ATQ)",
-      city: "Amritsar, Punjab 143001",
+      city: airportCity[invoiceData?.airport] || "Amritsar, Punjab 143001",
       email: "info@khelaenterprises.com",
-      logoPath: path.join(__dirname, "../assets/logo.png"),
+      logoPath: path.join(__dirname, "../assets/logo.jpeg"),
     },
     items: invoiceData?.items || [],
     subTotal: invoiceData?.subTotal || 0,
