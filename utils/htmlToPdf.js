@@ -171,7 +171,7 @@ const generateInvoicePDF = async () => {
 
       // ================= CLIENT & DATES (Grid Layout) =================
       doc.moveDown();
-      // const infoTop = 160;
+      const infoTop = 160;
 
       // Column 1: Bill To
       // doc
