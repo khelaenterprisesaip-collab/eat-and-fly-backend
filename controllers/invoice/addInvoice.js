@@ -1,6 +1,6 @@
 const InvoiceModel = require("../../models/Invoice.model");
 const InvoiceService = require("../../services/invoice/generateInvoiceNumber");
-const { convertHTMLToPdf } = require("../../utils/htmlToPdf");
+const { generateInvoicePDF } = require("../../utils/htmlToPdf");
 const uploadFiles = require("../../services/util/upload-files");
 
 const addInvoice = async (req, res) => {
@@ -83,9 +83,14 @@ const addInvoice = async (req, res) => {
 module.exports = addInvoice;
 
 const createInvoice = (invoiceData) =>
-  convertHTMLToPdf(invoiceData).then(({ location }) =>
-    uploadFiles.upload(location, "invoice.pdf", "invoice", "application/pdf")
-  );
+  generateInvoicePDF(invoiceData).then(async ({ filePath }) => {
+    return uploadFiles.upload(
+      filePath,
+      "invoice.pdf",
+      "invoice",
+      "application/pdf"
+    );
+  });
 
 //example payload for invoice pdf
 //   {
