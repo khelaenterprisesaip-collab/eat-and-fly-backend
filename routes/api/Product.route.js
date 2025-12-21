@@ -1,9 +1,9 @@
 const addProduct = require("../../controllers/product/addProduct");
 const deleteProduct = require("../../controllers/product/deleteProduct");
 const getProducts = require("../../controllers/product/getAllProducts");
+const getProductsByAirport = require("../../controllers/product/getProductsByAirport");
 const getProductById = require("../../controllers/product/getSingleProduct");
 const updateProduct = require("../../controllers/product/updateProduct");
-const isAdmin = require("../../middlewares/isAdmin");
 
 const router = require("express").Router();
 
@@ -21,5 +21,7 @@ router.put("/:id", updateProduct); // Add auth middleware here
 
 // DELETE /api/products/:id
 router.delete("/:id", deleteProduct);
+
+router.get("/airport", getProductsByAirport);
 
 module.exports = router;

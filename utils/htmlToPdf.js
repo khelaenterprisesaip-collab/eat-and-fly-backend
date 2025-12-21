@@ -8,32 +8,20 @@ const path = require("path");
  * @returns {Promise<{filePath: string}>}
  */
 
-const generateInvoicePDF = async () => {
-  // 1. Enhanced Data Structure (Added Company Info)
+const generateInvoicePDF = async (invoiceData) => {
+  console.log("invoiceData", invoiceData);
   const invoice = {
     invoiceNumber: "INV-2025-0012",
     dateTime: Math.floor(Date.now() / 1000),
-    dueDate: Math.floor(Date.now() / 1000) + 86400 * 7, // 7 days later
+    dueDate: Math.floor(Date.now() / 1000) + 86400 * 7,
     status: "paid",
-
-    // The Sender (You)
     company: {
       name: "Eat & Fly",
       address: "Sri Guru Ram Dass Ji International Airport",
       city: "Amritsar, Punjab 143001",
       email: "info@khelaenterprises.com",
-      logoPath: path.join(__dirname, "../assets/logo.png"), // Ensure this file exists
+      logoPath: path.join(__dirname, "../assets/logo.png"),
     },
-
-    // // The Receiver (Client)
-    // customer: {
-    //   name: "Rahul Sharma",
-    //   address: "45 Green Avenue",
-    //   city: "New Delhi, 110001",
-    //   email: "rahul.sharma@example.com",
-    //   phoneNumber: "+91 98765 43210",
-    // },
-
     items: [
       {
         name: "Airport Pickup Service (DEL)",
