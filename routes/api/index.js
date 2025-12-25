@@ -3,6 +3,7 @@ const router = require("express").Router();
 
 router.use("/auth", require("./Auth.route"));
 
+const getDashboardStats = require("../../adminController/dashboard/getDashboard");
 const jwtValidation = require("../../middlewares/jwt_validation");
 
 router.use("/me", jwtValidation, require("../../controllers/me/getMe"));
@@ -14,5 +15,6 @@ router.use(
 router.use("/user", jwtValidation, require("./User.route"));
 router.use("/product", jwtValidation, require("./Product.route"));
 router.use("/invoice", jwtValidation, require("./Invoice.route"));
+router.get("/dashboard", jwtValidation, getDashboardStats);
 
 module.exports = router;
