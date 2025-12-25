@@ -23,6 +23,7 @@ const airportCity = {
   jaisalmer: "Jaisalmer, Rajasthan 345001",
   ludhiana: "Ludhiana, Punjab 141001",
 };
+
 // --- DESIGN CONSTANTS ---
 const COLORS = {
   primary: "#1a237e", // Deep Navy Blue
@@ -66,7 +67,11 @@ const generateInvoicePDF = async (invoiceData) => {
     },
     items: invoiceData?.items || [],
     subTotal: invoiceData?.subTotal || 0,
-    taxPercentage: 5,
+    // New Fields
+    cgstPercentage: invoiceData?.cgstPercentage || 0,
+    igstPercentage: invoiceData?.igstPercentage || 0,
+    discountPercentage: invoiceData?.discountPercentage || 0,
+    discount: invoiceData?.discount || 0,
     totalAmount: invoiceData?.totalAmount || 0,
   };
 
@@ -74,7 +79,7 @@ const generateInvoicePDF = async (invoiceData) => {
     try {
       const doc = new PDFDocument({
         size: "A4",
-        margin: 40, // Slightly tighter margins for a modern look
+        margin: 40,
         bufferPages: true,
       });
 
@@ -87,7 +92,7 @@ const generateInvoicePDF = async (invoiceData) => {
       doc.pipe(stream);
 
       // --- HELPER FUNCTIONS ---
-      const formatCurrency = (amount) => `₹ ${amount.toFixed(2)}`;
+      const formatCurrency = (amount) => `₹ ${Number(amount).toFixed(2)}`;
 
       const drawHr = (y) => {
         doc
@@ -105,7 +110,6 @@ const generateInvoicePDF = async (invoiceData) => {
       if (fs.existsSync(invoice.company.logoPath)) {
         doc.image(invoice.company.logoPath, 40, y, { width: 60 });
       } else {
-        // Fallback Logo Placeholder
         doc
           .roundedRect(40, y, 60, 60, 5)
           .fill(COLORS.primary)
@@ -114,7 +118,7 @@ const generateInvoicePDF = async (invoiceData) => {
           .text("E&F", 50, y + 20);
       }
 
-      // 2. Company Details (Left, below Logo)
+      // 2. Company Details
       doc
         .fillColor(COLORS.textDark)
         .font(FONTS.bold)
@@ -127,7 +131,7 @@ const generateInvoicePDF = async (invoiceData) => {
         .fontSize(9)
         .text(invoice.company.email, 115, y + 32);
 
-      // 3. Invoice Meta (Top Right)
+      // 3. Invoice Meta
       doc
         .fillColor(COLORS.textLight)
         .fontSize(10)
@@ -139,10 +143,10 @@ const generateInvoicePDF = async (invoiceData) => {
         .fontSize(14)
         .text(`# ${invoice.invoiceNumber}`, 300, y + 15, { align: "right" });
 
-      // Status Badge (Top Right, below invoice num)
+      // Status Badge
       const badgeWidth = 80;
       const badgeHeight = 20;
-      const badgeX = 555 - badgeWidth; // Align right margin
+      const badgeX = 555 - badgeWidth;
       const badgeY = y + 40;
       const isPaid = invoice.status === "PAID";
 
@@ -164,7 +168,7 @@ const generateInvoicePDF = async (invoiceData) => {
       drawHr(y);
       y += 20;
 
-      // Column 1: Location / Branch
+      // Column 1
       doc
         .fillColor(COLORS.textLight)
         .fontSize(9)
@@ -178,7 +182,7 @@ const generateInvoicePDF = async (invoiceData) => {
         .text(invoice.company.address, 40, y + 15, { width: 200 })
         .text(invoice.company.city, 40, doc.y);
 
-      // Column 2: Date
+      // Column 2
       doc
         .fillColor(COLORS.textLight)
         .fontSize(9)
@@ -192,7 +196,7 @@ const generateInvoicePDF = async (invoiceData) => {
         .text(invoice.dateTime, 300, y + 15)
         .text(invoice.time, 300, doc.y);
 
-      // Column 3: Total Amount (Highlighted)
+      // Column 3
       doc
         .fillColor(COLORS.textLight)
         .fontSize(9)
@@ -208,18 +212,15 @@ const generateInvoicePDF = async (invoiceData) => {
       // ================= ITEM TABLE =================
       y = 230;
 
-      // Layout columns
       const cols = {
         desc: { x: 40, w: 260 },
-        qty: { x: 300, w: 60 }, // Center aligned
-        price: { x: 380, w: 80 }, // Right aligned
-        total: { x: 480, w: 75 }, // Right aligned
+        qty: { x: 300, w: 60 },
+        price: { x: 380, w: 80 },
+        total: { x: 480, w: 75 },
       };
 
-      // Table Header Background
       doc.rect(40, y, 515, 30).fill(COLORS.tableHeader);
 
-      // Table Header Text
       doc.fillColor(COLORS.textDark).fontSize(9).font(FONTS.bold);
       doc.text("DESCRIPTION", cols.desc.x + 10, y + 10);
       doc.text("QTY", cols.qty.x, y + 10, {
@@ -235,50 +236,35 @@ const generateInvoicePDF = async (invoiceData) => {
         align: "right",
       });
 
-      y += 30; // Move below header
+      y += 30;
 
-      // Table Rows
       invoice.items.forEach((item, i) => {
         const rowHeight = 35;
         const currentY = y;
 
-        // Zebra Striping (Even rows get background)
         if (i % 2 === 0) {
           doc.rect(40, currentY, 515, rowHeight).fill(COLORS.tableRowEven);
         }
 
-        // Check for page break
         if (currentY > 750) {
           doc.addPage();
-          y = 40; // Reset Y
+          y = 40;
         }
 
-        // Draw Text
         doc.fillColor(COLORS.textDark).fontSize(10).font(FONTS.regular);
-
-        // Item Name
         doc.text(item.name, cols.desc.x + 10, currentY + 11, {
           width: cols.desc.w,
         });
-
-        // Qty
         doc.text(item.quantity.toString(), cols.qty.x, currentY + 11, {
           width: cols.qty.w,
           align: "center",
         });
-
-        // Price
         doc.text(
           formatCurrency(item.perUnitPrice),
           cols.price.x,
           currentY + 11,
-          {
-            width: cols.price.w,
-            align: "right",
-          }
+          { width: cols.price.w, align: "right" }
         );
-
-        // Total (Bold)
         doc.font(FONTS.bold);
         doc.text(formatCurrency(item.totalPrice), cols.total.x, currentY + 11, {
           width: cols.total.w,
@@ -295,7 +281,6 @@ const generateInvoicePDF = async (invoiceData) => {
       const valX = 480;
       const valW = 75;
 
-      // Helper for summary rows
       const drawSummaryRow = (
         label,
         value,
@@ -312,7 +297,6 @@ const generateInvoicePDF = async (invoiceData) => {
           .font(fontType)
           .fontSize(fontSize)
           .text(label, summaryX, y);
-
         doc
           .fillColor(valueColor)
           .font(fontType)
@@ -322,14 +306,38 @@ const generateInvoicePDF = async (invoiceData) => {
         y += isTotal ? 25 : 20;
       };
 
-      // Subtotal
+      // 1. Subtotal
       drawSummaryRow("Subtotal", formatCurrency(invoice.subTotal));
 
-      // Tax
-      drawSummaryRow(
-        `Tax (${invoice.taxPercentage}%)`,
-        formatCurrency((invoice.subTotal * invoice.taxPercentage) / 100)
-      );
+      // 2. Discount (Only show if applied)
+      if (invoice.discount > 0) {
+        const discountLabel =
+          invoice.discountPercentage > 0
+            ? `Discount (${invoice.discountPercentage}%)`
+            : "Discount";
+        drawSummaryRow(discountLabel, `- ${formatCurrency(invoice.discount)}`);
+      }
+
+      // Calculate Taxable Amount (Subtotal - Discount) to display logic correctly
+      const taxableAmount = invoice.subTotal - invoice.discount;
+
+      // 3. CGST (Only show if applied)
+      if (invoice.cgstPercentage > 0) {
+        const cgstAmt = taxableAmount * (invoice.cgstPercentage / 100);
+        drawSummaryRow(
+          `CGST (${invoice.cgstPercentage}%)`,
+          formatCurrency(cgstAmt)
+        );
+      }
+
+      // 4. IGST (Only show if applied)
+      if (invoice.igstPercentage > 0) {
+        const igstAmt = taxableAmount * (invoice.igstPercentage / 100);
+        drawSummaryRow(
+          `IGST (${invoice.igstPercentage}%)`,
+          formatCurrency(igstAmt)
+        );
+      }
 
       // Divider
       doc
@@ -340,7 +348,7 @@ const generateInvoicePDF = async (invoiceData) => {
         .stroke();
       y += 5;
 
-      // Grand Total
+      // 5. Grand Total
       drawSummaryRow(
         "TOTAL DUE",
         formatCurrency(invoice.totalAmount),
@@ -349,12 +357,9 @@ const generateInvoicePDF = async (invoiceData) => {
       );
 
       // ================= FOOTER =================
-      // Push footer to bottom
       const footerY = 730;
 
-      doc
-        .rect(0, footerY, 595, 112) // Fill bottom with light color
-        .fill(COLORS.tableHeader);
+      doc.rect(0, footerY, 595, 112).fill(COLORS.tableHeader);
 
       doc
         .fillColor(COLORS.primary)
@@ -363,7 +368,6 @@ const generateInvoicePDF = async (invoiceData) => {
         .text("Thank you for your business!", 40, footerY + 25, {
           align: "center",
         });
-
       doc
         .fillColor(COLORS.textGray)
         .font(FONTS.regular)
@@ -372,11 +376,8 @@ const generateInvoicePDF = async (invoiceData) => {
           "Please include the invoice number in your payment reference.",
           40,
           footerY + 45,
-          {
-            align: "center",
-          }
+          { align: "center" }
         );
-
       doc
         .fillColor(COLORS.textLight)
         .fontSize(8)

@@ -17,10 +17,10 @@ const addInvoice = async (req, res) => {
       dateTime,
       // customer,
       subTotal,
-      cgstPercentage,
-      igstPercentage,
-      discountPercentage,
-      discount,
+      cgstPercentage, // Added
+      igstPercentage, // Added
+      discountPercentage, // Added
+      discount, // Added
       totalAmount,
       status,
       items,
@@ -50,6 +50,7 @@ const addInvoice = async (req, res) => {
     });
 
     // STEP 3: Prepare data for PDF template
+    // Ensure all new fields are passed here
     const invoiceTemplateData = {
       invoiceNumber,
       dateTime,
@@ -57,10 +58,10 @@ const addInvoice = async (req, res) => {
       // customer,
       items,
       subTotal,
-      cgstPercentage,
-      igstPercentage,
-      discountPercentage,
-      discount,
+      cgstPercentage: cgstPercentage || 0,
+      igstPercentage: igstPercentage || 0,
+      discountPercentage: discountPercentage || 0,
+      discount: discount || 0,
       totalAmount,
       status,
       // comment,
@@ -69,12 +70,12 @@ const addInvoice = async (req, res) => {
     };
 
     // STEP 4: Generate + upload PDF
-    // const { Location, key } = await createInvoice(invoiceTemplateData);
+    const { Location, key } = await createInvoice(invoiceTemplateData);
 
-    // newInvoice.pdf = {
-    //   name: key || "invoice.pdf",
-    //   url: Location,
-    // };
+    newInvoice.pdf = {
+      name: key || "invoice.pdf",
+      url: Location,
+    };
 
     await newInvoice.save();
 
@@ -88,8 +89,6 @@ const addInvoice = async (req, res) => {
   }
 };
 
-module.exports = addInvoice;
-
 const createInvoice = (invoiceData) =>
   generateInvoicePDF(invoiceData).then(async ({ filePath }) => {
     return uploadFiles.upload(
@@ -100,36 +99,4 @@ const createInvoice = (invoiceData) =>
     );
   });
 
-//example payload for invoice pdf
-//   {
-//   "invoiceNumber": "INV001",
-//   "airport": "amritsar",
-//   "dateTime": 1732611800,
-//   "status": "unpaid",
-//   "customer": {
-//     "name": "John Doe",
-//     "email": "john.doe@example.com",
-//     "phoneNumber": 9876543210
-//   },
-//   "items": [
-//     {
-//       "name": "Airport Pickup (Amritsar to City)",
-//       "quantity": 1,
-//       "perUnitPrice": 1200,
-//       "totalPrice": 1200
-//     },
-//     {
-//       "name": "Waiting Charges",
-//       "quantity": 2,
-//       "perUnitPrice": 150,
-//       "totalPrice": 300
-//     }
-//   ],
-//   "subTotal": 1500,
-//   "taxPercentage": 18,
-//   "totalAmount": 1770,
-//   "paymentMethod": "cash",
-//   "comment": "Thank you for choosing our airport ride services.",
-//   "createdAt": "2025-01-26T10:30:00.000Z",
-//   "invoiceId": "8e0e8c3b-9c3e-4fa1-9095-2897cc1f3420"
-// }
+module.exports = addInvoice;
