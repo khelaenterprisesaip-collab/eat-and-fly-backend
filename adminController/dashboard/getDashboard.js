@@ -3,7 +3,8 @@ const Product = require("../../models/Product.model");
 
 const getDashboardStats = async (req, res) => {
   try {
-    let { startDate, endDate } = req.query;
+    // 1. Get paymentMethod from query along with dates
+    let { startDate, endDate, paymentMethod } = req.query;
 
     const now = new Date();
     const defaultStart = new Date(
@@ -16,13 +17,17 @@ const getDashboardStats = async (req, res) => {
     const currentStart = startDate ? parseInt(startDate) : defaultStart;
     const currentEnd = endDate ? parseInt(endDate) : defaultEnd;
 
-    // Duration is no longer needed for logic switching, but kept if you need it later
-    // const duration = currentEnd - currentStart;
-
+    // 2. Build Invoice Filter
     const currentInvoiceFilter = {
       dateTime: { $gte: currentStart, $lte: currentEnd },
     };
 
+    // If paymentMethod is provided, add it to the filter
+    if (paymentMethod) {
+      currentInvoiceFilter.paymentMethod = paymentMethod;
+    }
+
+    // Product Filter (Products don't usually have payment methods, so we keep this date-only)
     const currentObjFilter = {
       createdAt: {
         $gte: new Date(currentStart),
@@ -30,16 +35,22 @@ const getDashboardStats = async (req, res) => {
       },
     };
 
+    // 3. Run Queries
     const [invoiceCount, productCount, salesAgg, chartData] = await Promise.all(
       [
+        // A. Invoices Count (Filtered by Payment Method if present)
         Invoice.countDocuments(currentInvoiceFilter),
+
+        // B. Products Count
         Product.countDocuments(currentObjFilter),
+
+        // C. Sales (Total Revenue - Filtered by Payment Method)
         Invoice.aggregate([
           { $match: currentInvoiceFilter },
           { $group: { _id: null, total: { $sum: "$totalAmount" } } },
         ]),
 
-        // --- MODIFIED CHART AGGREGATION ---
+        // D. Chart Data (Filtered by Payment Method)
         Invoice.aggregate([
           { $match: currentInvoiceFilter },
           {
@@ -51,7 +62,6 @@ const getDashboardStats = async (req, res) => {
           {
             $group: {
               _id: {
-                // Always group by exact Day, Month, Year
                 year: { $year: "$dateObj" },
                 month: { $month: "$dateObj" },
                 day: { $dayOfMonth: "$dateObj" },
@@ -74,10 +84,8 @@ const getDashboardStats = async (req, res) => {
       },
     ];
 
-    // --- MODIFIED FORMATTING ---
     const chartCategories = chartData.map((d) => {
       const date = new Date(d.dateStr);
-      // Always format as DD/MM
       return `${date.getDate()}/${date.getMonth() + 1}`;
     });
 
