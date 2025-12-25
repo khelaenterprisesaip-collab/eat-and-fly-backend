@@ -47,9 +47,19 @@ const InvoiceSchema = new Schema(
       type: Number,
       required: true,
     },
-    taxPercentage: {
+    cgstPercentage: {
       type: Number,
       required: true,
+    },
+    igstPercentage: {
+      type: Number,
+      required: true,
+    },
+    discountPercentage: {
+      type: Number,
+    },
+    discount: {
+      type: Number,
     },
     totalAmount: {
       type: Number,

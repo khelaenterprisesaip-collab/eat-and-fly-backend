@@ -17,7 +17,10 @@ const addInvoice = async (req, res) => {
       dateTime,
       // customer,
       subTotal,
-      taxPercentage,
+      cgstPercentage,
+      igstPercentage,
+      discountPercentage,
+      discount,
       totalAmount,
       status,
       items,
@@ -35,7 +38,10 @@ const addInvoice = async (req, res) => {
       dateTime,
       // customer,
       subTotal,
-      taxPercentage,
+      cgstPercentage,
+      igstPercentage,
+      discountPercentage,
+      discount,
       totalAmount,
       status,
       items,
@@ -51,7 +57,10 @@ const addInvoice = async (req, res) => {
       // customer,
       items,
       subTotal,
-      taxPercentage,
+      cgstPercentage,
+      igstPercentage,
+      discountPercentage,
+      discount,
       totalAmount,
       status,
       // comment,
@@ -60,12 +69,12 @@ const addInvoice = async (req, res) => {
     };
 
     // STEP 4: Generate + upload PDF
-    const { Location, key } = await createInvoice(invoiceTemplateData);
+    // const { Location, key } = await createInvoice(invoiceTemplateData);
 
-    newInvoice.pdf = {
-      name: key || "invoice.pdf",
-      url: Location,
-    };
+    // newInvoice.pdf = {
+    //   name: key || "invoice.pdf",
+    //   url: Location,
+    // };
 
     await newInvoice.save();
 
