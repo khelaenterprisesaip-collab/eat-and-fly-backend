@@ -222,7 +222,7 @@ const generateInvoicePDF = async (invoiceData) => {
       doc.rect(40, y, 515, 30).fill(COLORS.tableHeader);
 
       doc.fillColor(COLORS.textDark).fontSize(9).font(FONTS.bold);
-      doc.text("DESCRIPTION", cols.desc.x + 10, y + 10);
+      doc.text("ITEM NAME", cols.desc.x + 10, y + 10);
       doc.text("QTY", cols.qty.x, y + 10, {
         width: cols.qty.w,
         align: "center",
