@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const dayjs = require("dayjs");
 
+// --- DATA MAPPING ---
 const statuses = {
   paid: "PAID",
   unpaid: "UNPAID",
@@ -16,6 +17,7 @@ const airportNames = {
   jaisalmer: "Jaisalmer Airport (JSA)",
   ludhiana: "Ludhiana Airport (LUH)",
 };
+
 const airportCity = {
   amritsar: "Amritsar, Punjab 143001",
   ghaziabad: "Ghaziabad, Uttar Pradesh 201002",
@@ -26,19 +28,16 @@ const airportCity = {
 
 // --- DESIGN CONSTANTS ---
 const COLORS = {
-  primary: "#1a237e", // Deep Navy Blue
-  accent: "#2563eb", // Bright Blue
-  textDark: "#1f2937", // Near Black
-  textGray: "#6b7280", // Muted Gray
-  textLight: "#9ca3af", // Light Gray
-  tableHeader: "#f3f4f6", // Very Light Gray
-  tableRowOdd: "#ffffff",
-  tableRowEven: "#f9fafb", // Alternating row color
-  border: "#e5e7eb",
-  successBg: "#dcfce7",
-  successText: "#166534",
-  dangerBg: "#fee2e2",
-  dangerText: "#991b1b",
+  primary: "#1e293b", // Slate 800
+  accent: "#2563eb", // Royal Blue
+  textDark: "#111827", // Black-ish
+  textGray: "#6b7280", // Gray
+  border: "#e5e7eb", // Light Gray
+  tableHeader: "#f3f4f6", // Header Gray
+  tableRowEven: "#f9fafb", // Very light gray
+  highlight: "#f8fafc", // Summary box bg
+  success: "#16a34a", // Green
+  danger: "#dc2626", // Red
 };
 
 const FONTS = {
@@ -46,28 +45,24 @@ const FONTS = {
   bold: "Helvetica-Bold",
 };
 
-/**
- * Generate Invoice PDF
- */
 const generateInvoicePDF = async (invoiceData) => {
-  // Data Preparation
+  // Safe Data Mapping
   const invoice = {
     invoiceNumber: invoiceData?.invoiceNumber || "-",
-    dateTime: dayjs.unix(invoiceData?.dateTime).format("MMM DD, YYYY"),
+    date: dayjs.unix(invoiceData?.dateTime).format("DD MMM YYYY"),
     time: dayjs.unix(invoiceData?.dateTime).format("hh:mm A"),
     status: statuses[invoiceData?.status] || "PAID",
+    branchName: airportNames[invoiceData?.airport] || "Main Branch",
+    branchAddress: airportCity[invoiceData?.airport] || "",
+    // Company Details
     company: {
       name: "Eat & Fly",
-      address:
-        airportNames[invoiceData?.airport] ||
-        "Sri Guru Ram Dass Ji International Airport (ATQ)",
-      city: airportCity[invoiceData?.airport] || "Amritsar, Punjab 143001",
       email: "info@khelaenterprises.com",
+      phone: "+91 88721 94747",
       logoPath: path.join(__dirname, "../assets/logo.jpeg"),
     },
     items: invoiceData?.items || [],
     subTotal: invoiceData?.subTotal || 0,
-    // New Fields
     cgstPercentage: invoiceData?.cgstPercentage || 0,
     igstPercentage: invoiceData?.igstPercentage || 0,
     discountPercentage: invoiceData?.discountPercentage || 0,
@@ -79,7 +74,7 @@ const generateInvoicePDF = async (invoiceData) => {
     try {
       const doc = new PDFDocument({
         size: "A4",
-        margin: 40,
+        margin: 50,
         bufferPages: true,
       });
 
@@ -91,301 +86,257 @@ const generateInvoicePDF = async (invoiceData) => {
       const stream = fs.createWriteStream(filePath);
       doc.pipe(stream);
 
-      // --- HELPER FUNCTIONS ---
-      const formatCurrency = (amount) => `₹ ${Number(amount).toFixed(2)}`;
+      // --- HELPERS ---
+      const formatCurrency = (amount) => `Rs. ${Number(amount).toFixed(2)}`;
 
       const drawHr = (y) => {
         doc
           .strokeColor(COLORS.border)
           .lineWidth(1)
-          .moveTo(40, y)
-          .lineTo(555, y)
+          .moveTo(50, y)
+          .lineTo(545, y)
           .stroke();
       };
 
-      // ================= HEADER SECTION =================
-      let y = 40;
+      // ==========================================
+      // 1. HEADER SECTION
+      // ==========================================
+      let y = 50;
+      const logoSize = 60;
+      const textLeftMargin = 120; // X position for text next to logo
 
-      // 1. Logo (Top Left)
+      // -- Logo Logic --
       if (fs.existsSync(invoice.company.logoPath)) {
-        doc.image(invoice.company.logoPath, 40, y, { width: 60 });
+        doc.image(invoice.company.logoPath, 50, y, {
+          width: logoSize,
+          height: logoSize,
+          fit: [logoSize, logoSize],
+        });
       } else {
+        // Fallback if logo missing
+        doc.roundedRect(50, y, logoSize, logoSize, 5).fill(COLORS.primary);
         doc
-          .roundedRect(40, y, 60, 60, 5)
-          .fill(COLORS.primary)
           .fillColor("#FFF")
-          .fontSize(20)
-          .text("E&F", 50, y + 20);
+          .fontSize(16)
+          .text("E&F", 65, y + 20);
       }
 
-      // 2. Company Details
+      // -- Company Details (Next to Logo) --
       doc
-        .fillColor(COLORS.textDark)
+        .fillColor(COLORS.primary)
         .font(FONTS.bold)
-        .fontSize(16)
-        .text(invoice.company.name, 115, y + 10);
+        .fontSize(20)
+        .text(invoice.company.name, textLeftMargin, y + 5);
+
+      doc
+        .fontSize(9)
+        .font(FONTS.regular)
+        .fillColor(COLORS.textGray)
+        .text(invoice.company.email, textLeftMargin, y + 30)
+        .text(invoice.company.phone, textLeftMargin, y + 42); // <--- Display Phone
+
+      // -- Invoice Details (Right Side) --
+      const rightColX = 400;
+
+      doc
+        .fontSize(10)
+        .font(FONTS.bold)
+        .fillColor(COLORS.textDark)
+        .text("INVOICE", rightColX, y, { align: "right" });
+
+      doc
+        .fontSize(14)
+        .fillColor(COLORS.accent)
+        .text(`# ${invoice.invoiceNumber}`, rightColX, y + 15, {
+          align: "right",
+        });
+
+      doc
+        .fontSize(10)
+        .fillColor(COLORS.textDark)
+        .font(FONTS.regular)
+        .text(`Date: ${invoice.date}`, rightColX, y + 35, { align: "right" })
+        .text(`Time: ${invoice.time}`, rightColX, y + 48, { align: "right" });
+
+      // -- Status Badge --
+      const statusColor =
+        invoice.status === "PAID" ? COLORS.success : COLORS.danger;
+      doc.rect(475, y + 65, 70, 20).fillAndStroke(statusColor, statusColor);
+      doc
+        .fillColor("white")
+        .fontSize(10)
+        .font(FONTS.bold)
+        .text(invoice.status, 475, y + 70, { width: 70, align: "center" });
+
+      // ==========================================
+      // 2. BILLING INFO (Location)
+      // ==========================================
+      y = 140;
+      drawHr(y);
+      y += 15;
 
       doc
         .fillColor(COLORS.textGray)
-        .font(FONTS.regular)
         .fontSize(9)
-        .text(invoice.company.email, 115, y + 32);
-
-      // 3. Invoice Meta
-      doc
-        .fillColor(COLORS.textLight)
-        .fontSize(10)
         .font(FONTS.bold)
-        .text("INVOICE NUMBER", 300, y, { align: "right" });
+        .text("ISSUED AT (BRANCH)", 50, y);
 
       doc
         .fillColor(COLORS.textDark)
-        .fontSize(14)
-        .text(`# ${invoice.invoiceNumber}`, 300, y + 15, { align: "right" });
-
-      // Status Badge
-      const badgeWidth = 80;
-      const badgeHeight = 20;
-      const badgeX = 555 - badgeWidth;
-      const badgeY = y + 40;
-      const isPaid = invoice.status === "PAID";
-
-      doc
-        .roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 10)
-        .fill(isPaid ? COLORS.successBg : COLORS.dangerBg);
-
-      doc
-        .fillColor(isPaid ? COLORS.successText : COLORS.dangerText)
-        .fontSize(9)
+        .fontSize(11)
         .font(FONTS.bold)
-        .text(invoice.status, badgeX, badgeY + 5, {
-          width: badgeWidth,
-          align: "center",
-        });
-
-      // ================= INFO GRID =================
-      y = 130;
-      drawHr(y);
-      y += 20;
-
-      // Column 1
-      doc
-        .fillColor(COLORS.textLight)
-        .fontSize(9)
-        .font(FONTS.bold)
-        .text("LOCATION / BRANCH", 40, y);
-
-      doc
-        .fillColor(COLORS.textDark)
-        .fontSize(10)
+        .text(invoice.branchName, 50, y + 15)
         .font(FONTS.regular)
-        .text(invoice.company.address, 40, y + 15, { width: 200 })
-        .text(invoice.company.city, 40, doc.y);
-
-      // Column 2
-      doc
-        .fillColor(COLORS.textLight)
-        .fontSize(9)
-        .font(FONTS.bold)
-        .text("DATE ISSUED", 300, y);
-
-      doc
-        .fillColor(COLORS.textDark)
         .fontSize(10)
-        .font(FONTS.regular)
-        .text(invoice.dateTime, 300, y + 15)
-        .text(invoice.time, 300, doc.y);
+        .text(invoice.branchAddress, 50, y + 30, { width: 300 });
 
-      // Column 3
-      doc
-        .fillColor(COLORS.textLight)
-        .fontSize(9)
-        .font(FONTS.bold)
-        .text("TOTAL AMOUNT", 450, y);
+      // ==========================================
+      // 3. TABLE HEADERS
+      // ==========================================
+      y += 60;
+      const tableTop = y;
 
-      doc
-        .fillColor(COLORS.primary)
-        .fontSize(18)
-        .font(FONTS.bold)
-        .text(formatCurrency(invoice.totalAmount), 450, y + 15);
+      const colItem = 50;
+      const colQty = 320;
+      const colPrice = 390;
+      const colTotal = 470;
+      const colTotalWidth = 75;
 
-      // ================= ITEM TABLE =================
-      y = 230;
-
-      const cols = {
-        desc: { x: 40, w: 260 },
-        qty: { x: 300, w: 60 },
-        price: { x: 380, w: 80 },
-        total: { x: 480, w: 75 },
-      };
-
-      doc.rect(40, y, 515, 30).fill(COLORS.tableHeader);
+      // Header Background
+      doc.rect(50, tableTop, 495, 25).fill(COLORS.tableHeader);
 
       doc.fillColor(COLORS.textDark).fontSize(9).font(FONTS.bold);
-      doc.text("ITEM NAME", cols.desc.x + 10, y + 10);
-      doc.text("QTY", cols.qty.x, y + 10, {
-        width: cols.qty.w,
-        align: "center",
-      });
-      doc.text("PRICE", cols.price.x, y + 10, {
-        width: cols.price.w,
+      doc.text("ITEM DESCRIPTION", colItem + 10, tableTop + 8);
+      doc.text("QTY", colQty, tableTop + 8, { align: "center", width: 40 });
+      doc.text("RATE", colPrice, tableTop + 8, { align: "right", width: 60 });
+      doc.text("AMOUNT", colTotal, tableTop + 8, {
         align: "right",
-      });
-      doc.text("TOTAL", cols.total.x, y + 10, {
-        width: cols.total.w,
-        align: "right",
+        width: colTotalWidth,
       });
 
-      y += 30;
+      // ==========================================
+      // 4. TABLE ITEMS
+      // ==========================================
+      y += 25;
+      doc.font(FONTS.regular).fontSize(10);
 
       invoice.items.forEach((item, i) => {
-        const rowHeight = 35;
-        const currentY = y;
+        const rowHeight = 30;
 
         if (i % 2 === 0) {
-          doc.rect(40, currentY, 515, rowHeight).fill(COLORS.tableRowEven);
+          doc.rect(50, y, 495, rowHeight).fill(COLORS.tableRowEven);
         }
 
-        if (currentY > 750) {
+        if (y > 700) {
           doc.addPage();
-          y = 40;
+          y = 50;
         }
 
-        doc.fillColor(COLORS.textDark).fontSize(10).font(FONTS.regular);
-        doc.text(item.name, cols.desc.x + 10, currentY + 11, {
-          width: cols.desc.w,
-        });
-        doc.text(item.quantity.toString(), cols.qty.x, currentY + 11, {
-          width: cols.qty.w,
-          align: "center",
-        });
-        doc.text(
-          formatCurrency(item.perUnitPrice),
-          cols.price.x,
-          currentY + 11,
-          { width: cols.price.w, align: "right" }
-        );
-        doc.font(FONTS.bold);
-        doc.text(formatCurrency(item.totalPrice), cols.total.x, currentY + 11, {
-          width: cols.total.w,
+        doc.fillColor(COLORS.textDark);
+        doc.text(item.name, colItem + 10, y + 10);
+        doc.text(item.quantity, colQty, y + 10, { align: "center", width: 40 });
+        doc.text(formatCurrency(item.perUnitPrice), colPrice, y + 10, {
           align: "right",
+          width: 60,
         });
+        doc.font(FONTS.bold);
+        doc.text(formatCurrency(item.totalPrice), colTotal, y + 10, {
+          align: "right",
+          width: colTotalWidth,
+        });
+        doc.font(FONTS.regular);
 
         y += rowHeight;
       });
 
-      // ================= SUMMARY / TOTALS =================
+      // ==========================================
+      // 5. SUMMARY SECTION
+      // ==========================================
       y += 20;
 
-      const summaryX = 350;
-      const valX = 480;
-      const valW = 75;
+      const boxTop = y;
+      const boxHeight = 160;
+      doc.rect(300, boxTop, 245, boxHeight).fill(COLORS.highlight);
 
-      const drawSummaryRow = (
-        label,
-        value,
-        isBold = false,
-        isTotal = false
-      ) => {
-        const labelColor = isTotal ? COLORS.primary : COLORS.textGray;
-        const valueColor = isTotal ? COLORS.primary : COLORS.textDark;
-        const fontSize = isTotal ? 12 : 10;
-        const fontType = isTotal || isBold ? FONTS.bold : FONTS.regular;
+      let summaryY = boxTop + 15;
+      const labelX = 320;
+      const valX = 470;
+      const valW = 60;
 
+      const printSummaryRow = (label, value, isBold = false, isBig = false) => {
         doc
-          .fillColor(labelColor)
-          .font(fontType)
-          .fontSize(fontSize)
-          .text(label, summaryX, y);
-        doc
-          .fillColor(valueColor)
-          .font(fontType)
-          .fontSize(fontSize)
-          .text(value, valX, y, { width: valW, align: "right" });
+          .fillColor(isBig ? COLORS.primary : COLORS.textDark)
+          .font(isBold || isBig ? FONTS.bold : FONTS.regular)
+          .fontSize(isBig ? 12 : 10)
+          .text(label, labelX, summaryY);
 
-        y += isTotal ? 25 : 20;
+        doc.text(value, valX, summaryY, { align: "right", width: valW });
+        summaryY += isBig ? 25 : 20;
       };
 
-      // 1. Subtotal
-      drawSummaryRow("Subtotal", formatCurrency(invoice.subTotal));
+      printSummaryRow("Subtotal", formatCurrency(invoice.subTotal));
 
-      // 2. Discount (Only show if applied)
       if (invoice.discount > 0) {
-        const discountLabel =
-          invoice.discountPercentage > 0
-            ? `Discount (${invoice.discountPercentage}%)`
-            : "Discount";
-        drawSummaryRow(discountLabel, `- ${formatCurrency(invoice.discount)}`);
+        doc.fillColor(COLORS.danger);
+        printSummaryRow(
+          `Discount (${invoice.discountPercentage}%)`,
+          `- ${formatCurrency(invoice.discount)}`
+        );
+        doc.fillColor(COLORS.textDark);
       }
 
-      // Calculate Taxable Amount (Subtotal - Discount) to display logic correctly
       const taxableAmount = invoice.subTotal - invoice.discount;
 
-      // 3. CGST (Only show if applied)
       if (invoice.cgstPercentage > 0) {
-        const cgstAmt = taxableAmount * (invoice.cgstPercentage / 100);
-        drawSummaryRow(
+        const cgstAmount = (
+          taxableAmount *
+          (invoice.cgstPercentage / 100)
+        ).toFixed(2);
+        printSummaryRow(
           `CGST (${invoice.cgstPercentage}%)`,
-          formatCurrency(cgstAmt)
+          formatCurrency(cgstAmount)
         );
       }
 
-      // 4. IGST (Only show if applied)
       if (invoice.igstPercentage > 0) {
-        const igstAmt = taxableAmount * (invoice.igstPercentage / 100);
-        drawSummaryRow(
+        const igstAmount = (
+          taxableAmount *
+          (invoice.igstPercentage / 100)
+        ).toFixed(2);
+        printSummaryRow(
           `IGST (${invoice.igstPercentage}%)`,
-          formatCurrency(igstAmt)
+          formatCurrency(igstAmount)
         );
       }
 
-      // Divider
       doc
         .strokeColor(COLORS.border)
-        .lineWidth(1)
-        .moveTo(summaryX, y - 5)
-        .lineTo(555, y - 5)
+        .moveTo(315, summaryY)
+        .lineTo(535, summaryY)
         .stroke();
-      y += 5;
+      summaryY += 10;
 
-      // 5. Grand Total
-      drawSummaryRow(
-        "TOTAL DUE",
+      printSummaryRow(
+        "Grand Total",
         formatCurrency(invoice.totalAmount),
         true,
         true
       );
 
-      // ================= FOOTER =================
-      const footerY = 730;
+      // ==========================================
+      // 6. FOOTER
+      // ==========================================
+      const footerY = 760;
+      drawHr(footerY - 10);
 
-      doc.rect(0, footerY, 595, 112).fill(COLORS.tableHeader);
-
       doc
-        .fillColor(COLORS.primary)
-        .font(FONTS.bold)
-        .fontSize(12)
-        .text("Thank you for your business!", 40, footerY + 25, {
-          align: "center",
-        });
-      doc
-        .fillColor(COLORS.textGray)
-        .font(FONTS.regular)
-        .fontSize(9)
-        .text(
-          "Please include the invoice number in your payment reference.",
-          40,
-          footerY + 45,
-          { align: "center" }
-        );
-      doc
-        .fillColor(COLORS.textLight)
         .fontSize(8)
+        .fillColor(COLORS.textLight)
         .text(
-          `Generated on ${dayjs().format("DD MMM YYYY HH:mm")}`,
-          40,
-          footerY + 70,
-          { align: "center" }
+          "Thank you for your business. For any queries, contact support.",
+          50,
+          footerY,
+          { align: "center", width: 495 }
         );
 
       doc.end();
