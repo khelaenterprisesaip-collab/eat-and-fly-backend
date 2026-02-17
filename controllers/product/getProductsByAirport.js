@@ -2,7 +2,8 @@ const Product = require("../../models/Product.model");
 
 const getProductsByAirport = async (req, res, next) => {
   try {
-    const { name, description, itemCode, airport, page, limit } = req.query;
+    const { name, description, itemCode, airport, page, limit, categoryId } =
+      req.query;
 
     const pageNum = parseInt(page) || 1;
     const limitNum = parseInt(limit) || 10;
@@ -24,6 +25,10 @@ const getProductsByAirport = async (req, res, next) => {
 
     if (airport) {
       matchStage.availableAtAirports = airport;
+    }
+
+    if (categoryId) {
+      matchStage.categoryId = categoryId;
     }
 
     const pipeline = [

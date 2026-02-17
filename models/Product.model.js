@@ -34,6 +34,14 @@ const ProductSchema = new Schema(
       trim: true,
     },
 
+    // --- Category Field ---
+    categoryId: {
+      type: String,
+      ref: "Category",
+      required: [true, "Product must belong to a category"],
+    },
+    // ----------------------
+
     // --- Pricing Field (Your simple array) ---
     pricing: [
       {

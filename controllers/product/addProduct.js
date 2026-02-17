@@ -16,6 +16,7 @@ const addProduct = async (req, res, next) => {
       isAvailable,
       imageUrl,
       itemCode,
+      categoryId,
     } = req.body;
 
     // 2. Validate that 'pricing' is provided and is an array
@@ -48,6 +49,7 @@ const addProduct = async (req, res, next) => {
       isAvailable,
       imageUrl,
       itemCode,
+      categoryId,
       // 'uuid' will be generated automatically by the schema default
     });
 

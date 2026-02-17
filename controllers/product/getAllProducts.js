@@ -2,7 +2,7 @@ const Product = require("../../models/Product.model");
 
 const getProducts = async (req, res, next) => {
   try {
-    const { name, description, itemCode, pricing, airport, page, limit } =
+    const { name, description, itemCode, pricing, airport, page, limit, categoryId } =
       req.query;
 
     const pageNum = parseInt(page) || 1;
@@ -25,6 +25,10 @@ const getProducts = async (req, res, next) => {
 
     if (airport) {
       query.availableAtAirports = airport;
+    }
+
+    if (categoryId) {
+      query.categoryId = categoryId;
     }
 
     const [totalProducts, products] = await Promise.all([

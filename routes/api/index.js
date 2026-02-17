@@ -14,6 +14,7 @@ router.use(
 );
 router.use("/user", jwtValidation, require("./User.route"));
 router.use("/product", jwtValidation, require("./Product.route"));
+router.use("/category", jwtValidation, require("./Category.route"));
 router.use("/invoice", jwtValidation, require("./Invoice.route"));
 router.get("/dashboard", jwtValidation, getDashboardStats);
 
