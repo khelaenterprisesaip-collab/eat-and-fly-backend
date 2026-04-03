@@ -28,16 +28,16 @@ const airportCity = {
 
 // --- DESIGN CONSTANTS ---
 const COLORS = {
-  primary: "#1e293b", // Slate 800
-  accent: "#2563eb", // Royal Blue
-  textDark: "#111827", // Black-ish
-  textGray: "#6b7280", // Gray
-  border: "#e5e7eb", // Light Gray
-  tableHeader: "#f3f4f6", // Header Gray
-  tableRowEven: "#f9fafb", // Very light gray
+  primary: "#0f172a", // Sleek deep slate
+  accent: "#3b82f6", // Vibrant blue
+  textDark: "#1f2937", // Elegant dark gray
+  textGray: "#4b5563", // Medium gray
+  border: "#e2e8f0", // Clean subtle border
+  tableHeader: "#f1f5f9", // Crisp header bg
+  tableRowEven: "#f8fafc", // Ultra light alternating row
   highlight: "#f8fafc", // Summary box bg
-  success: "#16a34a", // Green
-  danger: "#dc2626", // Red
+  success: "#10b981", // Emerald success
+  danger: "#ef4444", // Red
 };
 
 const FONTS = {
@@ -68,6 +68,7 @@ const generateInvoicePDF = async (invoiceData) => {
     discountPercentage: invoiceData?.discountPercentage || 0,
     discount: invoiceData?.discount || 0,
     totalAmount: invoiceData?.totalAmount || 0,
+    payments: invoiceData?.payments || [],
   };
 
   return new Promise((resolve, reject) => {
@@ -256,6 +257,34 @@ const generateInvoicePDF = async (invoiceData) => {
 
       const boxTop = y;
       const boxHeight = 160;
+
+      // -- Payment Info Box --
+      if (invoice.payments && invoice.payments.length > 0) {
+        doc.rect(50, boxTop, 230, boxHeight).fill(COLORS.highlight);
+
+        doc
+          .fillColor(COLORS.primary)
+          .font(FONTS.bold)
+          .fontSize(10)
+          .text("PAYMENT DETAILS", 65, boxTop + 15);
+
+        doc
+          .strokeColor(COLORS.border)
+          .moveTo(65, boxTop + 30)
+          .lineTo(265, boxTop + 30)
+          .stroke();
+
+        let payY = boxTop + 45;
+
+        invoice.payments.forEach(pay => {
+          doc.fillColor(COLORS.textDark).font(FONTS.regular).fontSize(10);
+          doc.text(pay.method.toUpperCase(), 65, payY);
+          doc.text(formatCurrency(pay.amount), 180, payY, { width: 85, align: "right" });
+          payY += 20;
+        });
+      }
+
+      // -- Summary Box --
       doc.rect(300, boxTop, 245, boxHeight).fill(COLORS.highlight);
 
       let summaryY = boxTop + 15;

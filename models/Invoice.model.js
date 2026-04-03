@@ -85,11 +85,19 @@ const InvoiceSchema = new Schema(
         totalPrice: { type: Number, default: 0 },
       },
     ],
-    paymentMethod: {
-      type: String,
-      required: true,
-      enum: ["cash", "card", "online"],
-    },
+    payments: [
+      {
+        method: {
+          type: String,
+          required: true,
+          enum: ["cash", "card", "online"],
+        },
+        amount: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
     // comment: {
     //   type: String,
     //   required: false,

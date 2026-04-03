@@ -24,7 +24,10 @@ const getDashboardStats = async (req, res) => {
 
     // If paymentMethod is provided, add it to the filter
     if (paymentMethod) {
-      currentInvoiceFilter.paymentMethod = paymentMethod;
+      currentInvoiceFilter.$or = [
+        { "payments.method": paymentMethod },
+        { paymentMethod: paymentMethod }
+      ];
     }
 
     // Product Filter (Products don't usually have payment methods, so we keep this date-only)
@@ -47,18 +50,81 @@ const getDashboardStats = async (req, res) => {
         // C. Sales (Total Revenue - Filtered by Payment Method)
         Invoice.aggregate([
           { $match: currentInvoiceFilter },
-          { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+          ...(paymentMethod 
+            ? [
+                {
+                  $project: {
+                    matchedAmount: {
+                      $cond: {
+                        if: { $and: [{ $isArray: "$payments" }, { $gt: [{ $size: "$payments" }, 0] }] },
+                        then: {
+                          $reduce: {
+                            input: {
+                              $filter: {
+                                input: "$payments",
+                                as: "pay",
+                                cond: { $eq: ["$$pay.method", paymentMethod] }
+                              }
+                            },
+                            initialValue: 0,
+                            in: { $add: ["$$value", "$$this.amount"] }
+                          }
+                        },
+                        else: {
+                          $cond: [ { $eq: ["$paymentMethod", paymentMethod] }, "$totalAmount", 0 ]
+                        }
+                      }
+                    }
+                  }
+                },
+                { $group: { _id: null, total: { $sum: "$matchedAmount" } } }
+              ]
+            : [
+                { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+              ]
+          )
         ]),
 
         // D. Chart Data (Filtered by Payment Method)
         Invoice.aggregate([
           { $match: currentInvoiceFilter },
-          {
-            $project: {
-              totalAmount: 1,
-              dateObj: { $toDate: "$dateTime" },
-            },
-          },
+          ...(paymentMethod
+            ? [
+                {
+                  $project: {
+                    dateObj: { $toDate: "$dateTime" },
+                    amount: {
+                      $cond: {
+                        if: { $and: [{ $isArray: "$payments" }, { $gt: [{ $size: "$payments" }, 0] }] },
+                        then: {
+                          $reduce: {
+                            input: {
+                              $filter: {
+                                input: "$payments",
+                                as: "pay",
+                                cond: { $eq: ["$$pay.method", paymentMethod] }
+                              }
+                            },
+                            initialValue: 0,
+                            in: { $add: ["$$value", "$$this.amount"] }
+                          }
+                        },
+                        else: {
+                          $cond: [ { $eq: ["$paymentMethod", paymentMethod] }, "$totalAmount", 0 ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            : [
+                {
+                  $project: {
+                    amount: "$totalAmount",
+                    dateObj: { $toDate: "$dateTime" },
+                  },
+                },
+              ]),
           {
             $group: {
               _id: {
@@ -67,7 +133,7 @@ const getDashboardStats = async (req, res) => {
                 day: { $dayOfMonth: "$dateObj" },
               },
               dateStr: { $first: "$dateObj" },
-              revenue: { $sum: "$totalAmount" },
+              revenue: { $sum: "$amount" },
             },
           },
           { $sort: { dateStr: 1 } },

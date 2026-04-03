@@ -24,7 +24,7 @@ const addInvoice = async (req, res) => {
       totalAmount,
       status,
       items,
-      paymentMethod,
+      payments,
       // comment,
     } = req.body;
 
@@ -45,7 +45,7 @@ const addInvoice = async (req, res) => {
       totalAmount,
       status,
       items,
-      paymentMethod,
+      payments,
       // comment,
     });
 
