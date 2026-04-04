@@ -1,11 +1,9 @@
 const router = require("express").Router();
 
 // bring in models and controllers
-const getDashboardSummary = require("../../adminController/dashboard/getDashboardSummary");
+const getDashboardStats = require("../../adminController/dashboard/getDashboard");
 
-// get user details
-router.get("/summary", getDashboardSummary);
-
-// webhooks route
+// get dashboard stats
+router.get("/", getDashboardStats);
 
 module.exports = router;

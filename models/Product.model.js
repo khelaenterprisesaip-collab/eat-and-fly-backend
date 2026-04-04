@@ -101,6 +101,11 @@ const ProductSchema = new Schema(
   }
 );
 
+// Indexes
+ProductSchema.index({ categoryId: 1 });
+ProductSchema.index({ name: 1 });
+ProductSchema.index({ availableAtAirports: 1 });
+
 // --- Validation Hook (No changes needed) ---
 ProductSchema.pre("save", function (next) {
   const availableAirports = this.availableAtAirports;

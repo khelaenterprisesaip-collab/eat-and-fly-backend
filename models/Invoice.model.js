@@ -111,7 +111,11 @@ const InvoiceSchema = new Schema(
       },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
+
+// Indexes for faster dashboard lookups
+InvoiceSchema.index({ dateTime: -1 });
+InvoiceSchema.index({ airport: 1 });
 
 module.exports = model("Invoice", InvoiceSchema, "invoice");
