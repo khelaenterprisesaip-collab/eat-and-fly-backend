@@ -15,7 +15,6 @@ const getInvoices = async (req, res) => {
       query.$or = [
         { invoiceNumber: regex },
         { "customer.name": regex },
-        { "customer.email": regex },
       ];
     }
 

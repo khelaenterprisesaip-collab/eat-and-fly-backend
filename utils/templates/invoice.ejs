@@ -123,6 +123,10 @@
         <td><strong>Status:</strong></td>
         <td style="text-transform: capitalize;"><%= invoice.status %></td>
       </tr>
+      <tr>
+        <td><strong>GST No:</strong></td>
+        <td>03NTHPS8695L1ZG</td>
+      </tr>
     </table>
   </div>
 
@@ -132,15 +136,7 @@
       <tr>
         <td><strong>Billed To:</strong></td>
       </tr>
-      <tr><td><%= invoice.customer.name %></td></tr>
-
-      <% if (invoice.customer.email) { %>
-        <tr><td><%= invoice.customer.email %></td></tr>
-      <% } %>
-
-      <% if (invoice.customer.phoneNumber) { %>
-        <tr><td><%= invoice.customer.phoneNumber %></td></tr>
-      <% } %>
+      <tr><td><%= invoice.customer?.name || "Walk-in Customer" %></td></tr>
     </table>
   </div>
 

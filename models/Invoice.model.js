@@ -31,18 +31,11 @@ const InvoiceSchema = new Schema(
       type: Number,
       required: true,
     },
-    // customer: {
-    //   name: {
-    //     type: String,
-    //     required: true,
-    //   },
-    //   email: {
-    //     type: String,
-    //   },
-    //   phoneNumber: {
-    //     type: Number,
-    //   },
-    // },
+    customer: {
+      name: {
+        type: String,
+      },
+    },
     subTotal: {
       type: Number,
       required: true,

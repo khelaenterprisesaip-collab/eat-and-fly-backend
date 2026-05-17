@@ -15,12 +15,12 @@ const addInvoice = async (req, res) => {
 
     const {
       dateTime,
-      // customer,
       subTotal,
       cgstPercentage, // Added
       igstPercentage, // Added
       discountPercentage, // Added
       discount, // Added
+      discountAmount,
       totalAmount,
       status,
       items,
@@ -28,24 +28,46 @@ const addInvoice = async (req, res) => {
       // comment,
     } = req.body;
 
+    const roundMoney = (value) =>
+      Number((Number(value) || 0).toFixed(2));
+
     // STEP 1: Generate invoice number
     const invoiceNumber = await InvoiceService.generateInvoiceNumber();
+    const normalizedSubTotal = roundMoney(subTotal);
+    const normalizedDiscount = roundMoney(discount ?? discountAmount ?? 0);
+    const normalizedTotalAmount = roundMoney(totalAmount);
+    const normalizedItems = Array.isArray(items)
+      ? items.map((item) => ({
+          ...item,
+          quantity: Number(item.quantity || 0),
+          perUnitPrice: roundMoney(item.perUnitPrice),
+          totalPrice: roundMoney(item.totalPrice),
+        }))
+      : [];
+    const normalizedPayments = Array.isArray(payments)
+      ? payments.map((payment) => ({
+          ...payment,
+          amount: roundMoney(payment.amount),
+        }))
+      : [];
+    const normalizedCgstPercentage = Number(cgstPercentage || 0);
+    const normalizedIgstPercentage = Number(igstPercentage || 0);
+    const normalizedDiscountPercentage = Number(discountPercentage || 0);
 
     // STEP 2: Create invoice WITHOUT PDF first
     const newInvoice = new InvoiceModel({
       invoiceNumber,
       airport,
       dateTime,
-      // customer,
-      subTotal,
-      cgstPercentage,
-      igstPercentage,
-      discountPercentage,
-      discount,
-      totalAmount,
+      subTotal: normalizedSubTotal,
+      cgstPercentage: normalizedCgstPercentage,
+      igstPercentage: normalizedIgstPercentage,
+      discountPercentage: normalizedDiscountPercentage,
+      discount: normalizedDiscount,
+      totalAmount: normalizedTotalAmount,
       status,
-      items,
-      payments,
+      items: normalizedItems,
+      payments: normalizedPayments,
       // comment,
     });
 
@@ -55,14 +77,13 @@ const addInvoice = async (req, res) => {
       invoiceNumber,
       dateTime,
       airport,
-      // customer,
-      items,
-      subTotal,
-      cgstPercentage: cgstPercentage || 0,
-      igstPercentage: igstPercentage || 0,
-      discountPercentage: discountPercentage || 0,
-      discount: discount || 0,
-      totalAmount,
+      items: normalizedItems,
+      subTotal: normalizedSubTotal,
+      cgstPercentage: normalizedCgstPercentage,
+      igstPercentage: normalizedIgstPercentage,
+      discountPercentage: normalizedDiscountPercentage,
+      discount: normalizedDiscount,
+      totalAmount: normalizedTotalAmount,
       status,
       // comment,
       createdAt: dayjs().toISOString(),

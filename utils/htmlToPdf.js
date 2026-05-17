@@ -19,11 +19,11 @@ const airportNames = {
 };
 
 const airportCity = {
-  amritsar: "Amritsar, Punjab 143001",
-  ghaziabad: "Ghaziabad, Uttar Pradesh 201002",
-  jalandhar: "Jalandhar, Punjab 144001",
-  jaisalmer: "Jaisalmer, Rajasthan 345001",
-  ludhiana: "Ludhiana, Punjab 141001",
+  amritsar: "Sri Guru Ram Dass Ji International Airport (ATQ)",
+  ghaziabad: "Hindon Airport (HDO)",
+  jalandhar: "Adampur Airport (AIP)",
+  jaisalmer: "Jaisalmer Airport (JSA)",
+  ludhiana: "LIAL Airport, Ludhiana, Punjab",
 };
 
 // --- DESIGN CONSTANTS ---
@@ -57,8 +57,6 @@ const generateInvoicePDF = async (invoiceData) => {
     // Company Details
     company: {
       name: "Eat & Fly",
-      email: "info@khelaenterprises.com",
-      phone: "+91 88721 94747",
       logoPath: path.join(__dirname, "../assets/logo.jpeg"),
     },
     items: invoiceData?.items || [],
@@ -89,6 +87,7 @@ const generateInvoicePDF = async (invoiceData) => {
 
       // --- HELPERS ---
       const formatCurrency = (amount) => `Rs. ${Number(amount).toFixed(2)}`;
+      const roundMoney = (value) => Number((Number(value) || 0).toFixed(2));
 
       const drawHr = (y) => {
         doc
@@ -132,9 +131,7 @@ const generateInvoicePDF = async (invoiceData) => {
       doc
         .fontSize(9)
         .font(FONTS.regular)
-        .fillColor(COLORS.textGray)
-        .text(invoice.company.email, textLeftMargin, y + 30)
-        .text(invoice.company.phone, textLeftMargin, y + 42); // <--- Display Phone
+        .fillColor(COLORS.textGray);
 
       // -- Invoice Details (Right Side) --
       const rightColX = 400;
@@ -189,12 +186,14 @@ const generateInvoicePDF = async (invoiceData) => {
         .text(invoice.branchName, 50, y + 15)
         .font(FONTS.regular)
         .fontSize(10)
-        .text(invoice.branchAddress, 50, y + 30, { width: 300 });
+        .text(invoice.branchAddress, 50, y + 30, { width: 300 })
+        .font(FONTS.bold)
+        .text("GST No: 03NTHPS8695L1ZG", 50, y + 45, { width: 300 });
 
       // ==========================================
       // 3. TABLE HEADERS
       // ==========================================
-      y += 60;
+      y += 75;
       const tableTop = y;
 
       const colItem = 50;
@@ -236,12 +235,12 @@ const generateInvoicePDF = async (invoiceData) => {
         doc.fillColor(COLORS.textDark);
         doc.text(item.name, colItem + 10, y + 10);
         doc.text(item.quantity, colQty, y + 10, { align: "center", width: 40 });
-        doc.text(formatCurrency(item.perUnitPrice), colPrice, y + 10, {
+        doc.text(formatCurrency(roundMoney(item.perUnitPrice)), colPrice, y + 10, {
           align: "right",
           width: 60,
         });
         doc.font(FONTS.bold);
-        doc.text(formatCurrency(item.totalPrice), colTotal, y + 10, {
+        doc.text(formatCurrency(roundMoney(item.totalPrice)), colTotal, y + 10, {
           align: "right",
           width: colTotalWidth,
         });
@@ -303,24 +302,26 @@ const generateInvoicePDF = async (invoiceData) => {
         summaryY += isBig ? 25 : 20;
       };
 
-      printSummaryRow("Subtotal", formatCurrency(invoice.subTotal));
+      const subTotal = roundMoney(invoice.subTotal);
+      printSummaryRow("Subtotal", formatCurrency(subTotal));
 
-      if (invoice.discount > 0) {
+      const discountAmount = roundMoney(invoice.discount || 0);
+
+      if (discountAmount > 0) {
         doc.fillColor(COLORS.danger);
         printSummaryRow(
           `Discount (${invoice.discountPercentage}%)`,
-          `- ${formatCurrency(invoice.discount)}`
+          `- ${formatCurrency(discountAmount)}`
         );
         doc.fillColor(COLORS.textDark);
       }
 
-      const taxableAmount = invoice.subTotal - invoice.discount;
+      const taxableAmount = roundMoney(Math.max(subTotal - discountAmount, 0));
 
       if (invoice.cgstPercentage > 0) {
-        const cgstAmount = (
-          taxableAmount *
-          (invoice.cgstPercentage / 100)
-        ).toFixed(2);
+        const cgstAmount = roundMoney(
+          taxableAmount * (invoice.cgstPercentage / 100)
+        );
         printSummaryRow(
           `CGST (${invoice.cgstPercentage}%)`,
           formatCurrency(cgstAmount)
@@ -328,10 +329,9 @@ const generateInvoicePDF = async (invoiceData) => {
       }
 
       if (invoice.igstPercentage > 0) {
-        const igstAmount = (
-          taxableAmount *
-          (invoice.igstPercentage / 100)
-        ).toFixed(2);
+        const igstAmount = roundMoney(
+          taxableAmount * (invoice.igstPercentage / 100)
+        );
         printSummaryRow(
           `IGST (${invoice.igstPercentage}%)`,
           formatCurrency(igstAmount)
@@ -347,7 +347,7 @@ const generateInvoicePDF = async (invoiceData) => {
 
       printSummaryRow(
         "Grand Total",
-        formatCurrency(invoice.totalAmount),
+        formatCurrency(roundMoney(invoice.totalAmount)),
         true,
         true
       );
