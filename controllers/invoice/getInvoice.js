@@ -36,7 +36,7 @@ const getInvoices = async (req, res) => {
         });
       }
 
-      query.airport = "ludhiana";
+      query.airport = existingUser.airport.toLowerCase();
     } else if (airport) {
       query.airport = airport.toLowerCase();
     }
