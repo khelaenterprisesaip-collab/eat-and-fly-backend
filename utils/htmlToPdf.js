@@ -26,6 +26,11 @@ const airportCity = {
   ludhiana: "LIAL Airport, Ludhiana, Punjab",
 };
 
+const getGstNumberForAirport = (airport) =>
+  String(airport || "").toLowerCase() === "ghaziabad"
+    ? "09NTHPS8695L1Z4"
+    : "03NTHPS8695L1ZG";
+
 // --- DESIGN CONSTANTS ---
 const COLORS = {
   primary: "#0f172a", // Sleek deep slate
@@ -54,6 +59,7 @@ const generateInvoicePDF = async (invoiceData) => {
     status: statuses[invoiceData?.status] || "PAID",
     branchName: airportNames[invoiceData?.airport] || "Main Branch",
     branchAddress: airportCity[invoiceData?.airport] || "",
+    gstNumber: getGstNumberForAirport(invoiceData?.airport),
     // Company Details
     company: {
       name: "Eat & Fly",
@@ -188,7 +194,7 @@ const generateInvoicePDF = async (invoiceData) => {
         .fontSize(10)
         .text(invoice.branchAddress, 50, y + 30, { width: 300 })
         .font(FONTS.bold)
-        .text("GST No: 03NTHPS8695L1ZG", 50, y + 45, { width: 300 });
+        .text(`GST No: ${invoice.gstNumber}`, 50, y + 45, { width: 300 });
 
       // ==========================================
       // 3. TABLE HEADERS

@@ -111,6 +111,7 @@
   <!-- Invoice Metadata -->
   <div class="meta">
     <table>
+      <% const gstNumber = String(invoice.airport || "").toLowerCase() === "ghaziabad" ? "09NTHPS8695L1Z4" : "03NTHPS8695L1ZG"; %>
       <tr>
         <td><strong>Date:</strong></td>
         <td><%= new Date(invoice.dateTime * 1000).toLocaleString() %></td>
@@ -125,7 +126,7 @@
       </tr>
       <tr>
         <td><strong>GST No:</strong></td>
-        <td>03NTHPS8695L1ZG</td>
+        <td><%= gstNumber %></td>
       </tr>
     </table>
   </div>
