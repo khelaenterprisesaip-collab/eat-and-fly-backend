@@ -26,6 +26,6 @@ wealthsimple-api.js
 ws-trade.js
 read.js
 branch_structure.json
-.env
 temp_auto_push.bat
 temp_interactive_push.bat
+config.bat
