@@ -54,8 +54,8 @@ const generateInvoicePDF = async (invoiceData) => {
   // Safe Data Mapping
   const invoice = {
     invoiceNumber: invoiceData?.invoiceNumber || "-",
-    date: dayjs.unix(invoiceData?.dateTime).format("DD MMM YYYY"),
-    time: dayjs.unix(invoiceData?.dateTime).format("hh:mm A"),
+    date: dayjs.unix(invoiceData?.dateTime).utcOffset(330).format("DD MMM YYYY"),
+    time: dayjs.unix(invoiceData?.dateTime).utcOffset(330).format("hh:mm A"),
     status: statuses[invoiceData?.status] || "PAID",
     branchName: airportNames[invoiceData?.airport] || "Main Branch",
     branchAddress: airportCity[invoiceData?.airport] || "",
