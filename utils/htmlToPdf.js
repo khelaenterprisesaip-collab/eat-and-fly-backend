@@ -1,7 +1,6 @@
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
-const dayjs = require("dayjs");
 
 // --- DATA MAPPING ---
 const statuses = {
@@ -31,6 +30,37 @@ const getGstNumberForAirport = (airport) =>
     ? "09NTHPS8695L1Z4"
     : "03NTHPS8695L1ZG";
 
+// IST wall-clock formatting, independent of server system timezone.
+// Shift the UTC instant by +5:30 then read UTC getters (no dayjs plugin needed).
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+const toIstParts = (unixSeconds) => {
+  const d = new Date(Number(unixSeconds) * 1000 + IST_OFFSET_MS);
+  return {
+    day: d.getUTCDate(),
+    month: MONTH_NAMES[d.getUTCMonth()],
+    year: d.getUTCFullYear(),
+    hours: d.getUTCHours(),
+    minutes: d.getUTCMinutes(),
+  };
+};
+
+const formatIstDate = (unixSeconds) => {
+  const { day, month, year } = toIstParts(unixSeconds);
+  return `${String(day).padStart(2, "0")} ${month} ${year}`;
+};
+
+const formatIstTime = (unixSeconds) => {
+  const { hours, minutes } = toIstParts(unixSeconds);
+  const period = hours >= 12 ? "PM" : "AM";
+  const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+  return `${String(hour12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${period}`;
+};
+
 // --- DESIGN CONSTANTS ---
 const COLORS = {
   primary: "#0f172a", // Sleek deep slate
@@ -54,8 +84,8 @@ const generateInvoicePDF = async (invoiceData) => {
   // Safe Data Mapping
   const invoice = {
     invoiceNumber: invoiceData?.invoiceNumber || "-",
-    date: dayjs.unix(invoiceData?.dateTime).utcOffset(330).format("DD MMM YYYY"),
-    time: dayjs.unix(invoiceData?.dateTime).utcOffset(330).format("hh:mm A"),
+    date: formatIstDate(invoiceData?.dateTime),
+    time: formatIstTime(invoiceData?.dateTime),
     status: statuses[invoiceData?.status] || "PAID",
     branchName: airportNames[invoiceData?.airport] || "Main Branch",
     branchAddress: airportCity[invoiceData?.airport] || "",
