@@ -25,4 +25,4 @@ first.json
 wealthsimple-api.js
 ws-trade.js
 read.js
-.env
+config.bat
